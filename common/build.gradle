@@ -15,4 +15,9 @@ dependencies {
     api("com.google.guava:guava:33.4.8-jre")
     api("com.zaxxer:HikariCP:6.0.0")
     api("io.netty:netty-all:${project.netty_version}")
+
+    // Mojang DFU. can serialize easily.
+    api("com.mojang:datafixerupper:8.0.16")
+
+    api("org.jetbrains:annotations:26.0.2")
 }

@@ -8,10 +8,13 @@ allprojects {
     apply plugin: 'com.gradleup.shadow'
     repositories {
         mavenCentral()
+        maven { url "https://libraries.minecraft.net" }
     }
 
     dependencies {
-
+        testImplementation platform('org.junit:junit-bom:5.10.0')
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testImplementation("org.testng:testng:7.7.0")
 //        implementation("io.netty:netty-pkitesting:${project.netty_version}")
     }
 
