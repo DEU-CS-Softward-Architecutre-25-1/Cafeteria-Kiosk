@@ -1,4 +1,7 @@
 package common;
 
-public record Cart() {
+import java.util.List;
+
+public record Cart(List<OrderItem> items) {
+    public static final Cart EMPTY = new Cart(List.of());
 }

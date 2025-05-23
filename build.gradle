@@ -1,34 +1,16 @@
 plugins {
     id 'java-library'
-    id 'com.gradleup.shadow' version '9.0.0-beta3'
+    id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
 }
 
 allprojects {
-    apply plugin : 'java-library'
-    apply plugin: 'com.gradleup.shadow'
+    apply plugin: 'java-library'
     repositories {
         mavenCentral()
-    }
-
-    dependencies {
-
-//        implementation("io.netty:netty-pkitesting:${project.netty_version}")
     }
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
         it.options.release.set(21)
     }
-
-    tasks.build {
-        dependsOn(shadowJar)
-    }
-
-    shadowJar {
-        manifest {
-            attributes 'Main-Class': 'dev.qf.Main'
-        }
-        exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
-    }
 }
-
