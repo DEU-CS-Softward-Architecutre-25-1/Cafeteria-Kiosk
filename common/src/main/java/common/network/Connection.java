@@ -1,10 +1,9 @@
 package common.network;
 
-import common.network.handler.SerializableDecoder;
-import common.network.handler.SerializableEncoder;
-import common.network.handler.SerializableHandler;
+import common.network.handler.*;
 import common.network.packet.SidedPacket;
 import io.netty.channel.*;
+import io.netty.handler.flow.FlowControlHandler;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.util.List;
@@ -31,12 +30,16 @@ public interface Connection {
 
                 ChannelPipeline pipeline = ch.pipeline();
 
+                pipeline.addLast("splitter", new SplitterHandler());
+                pipeline.addLast(new FlowControlHandler());
                 pipeline.addLast("decoder", new SerializableDecoder());
+                pipeline.addLast("prepender", new SizePrepender());
                 pipeline.addLast("encoder", new SerializableEncoder());
                 pipeline.addLast("handler", new SerializableHandler(side));
             }
         };
     }
+    SidedPacket.Side getSide();
     ChannelFuture sendSerializable(String id, Serializable<?> serializable);
     void handleDisconnect(ChannelHandlerContext ctx, SerializableHandler handler);
     void onEstablishedChannel(ChannelHandlerContext ctx, SerializableHandler handler);

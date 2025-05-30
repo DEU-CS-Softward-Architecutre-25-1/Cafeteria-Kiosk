@@ -91,6 +91,11 @@ public final class KioskNettyServer implements Connection {
     }
 
     @Override
+    public SidedPacket.Side getSide() {
+        return SidedPacket.Side.SERVER;
+    }
+
+    @Override
     public ChannelFuture sendSerializable(String id, Serializable<?> serializable) {
         Optional<SerializableHandler> optionalHandler =  connections.stream().filter(handler -> id.equals(handler.getId())).findAny();
 

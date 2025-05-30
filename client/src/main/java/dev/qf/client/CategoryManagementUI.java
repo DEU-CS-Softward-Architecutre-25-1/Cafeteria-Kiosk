@@ -1,17 +1,17 @@
 package dev.qf.client;
 
-import common.AddCategory;
+import com.google.common.collect.Lists;
 import common.Category;
-import common.DeleteCategory;
+import common.registry.RegistryManager;
+import dev.qf.client.event.DataReceivedEvent;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
-import java.util.ArrayList;
 
 public class CategoryManagementUI extends JFrame {
     // 카테고리 리스트와 컨트롤러
-    private final List<Category> categoryList = new ArrayList<>();
+    private final List<Category> categoryList = Lists.newArrayList(RegistryManager.CATEGORIES.getAll());
     private final AddCategory addCategoryController = new AddCategory(categoryList);
     private final DeleteCategory deleteCategoryController = new DeleteCategory(categoryList);
 
@@ -24,6 +24,17 @@ public class CategoryManagementUI extends JFrame {
         initComponents();
         initEventHandlers();
         refreshCategories();
+        DataReceivedEvent.EVENT.register(data -> {
+            if (!data.getClazz().equals(Category.class)) {
+                return;
+            }
+
+            if (this.isVisible()) {
+                this.categoryList.clear();
+                this.categoryList.addAll(RegistryManager.CATEGORIES.getAll());
+                this.refreshCategories();
+            }
+        });
     }
 
     private void initComponents() {
@@ -56,6 +67,7 @@ public class CategoryManagementUI extends JFrame {
         });
         saveCategoryButton.addActionListener(e -> categorySaveButton());
         closeButton.addActionListener(e -> categoryClose());
+
     }
 
     // 카테고리 추가 팝업 창 열기
@@ -96,9 +108,5 @@ public class CategoryManagementUI extends JFrame {
     // 닫기 버튼
     public void categoryClose() {
         dispose();
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new CategoryManagementUI().setVisible(true));
     }
 }

@@ -26,7 +26,7 @@ public final class KioskNettyClient implements Connection {
     private SerializableHandler handler;
 
     public KioskNettyClient() {
-        if (Main.INSTANCE != null) {
+        if (Container.get(Connection.class) != null) {
             throw new IllegalStateException("KioskNettyClient already initialized");
         }
         Container.put(Connection.class, this);
@@ -60,6 +60,11 @@ public final class KioskNettyClient implements Connection {
             CHANNEL.shutdownGracefully().syncUninterruptibly();
         }
         LOGGER.info("Client shutdown complete.");
+    }
+
+    @Override
+    public SidedPacket.Side getSide() {
+        return SidedPacket.Side.CLIENT;
     }
 
     @Override

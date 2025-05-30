@@ -43,9 +43,15 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
         if (!this.handler.isEncrypted()) {
             throw new IllegalStateException("Client is not encrypted");
         }
-        logger.info("RequestData received : {}", packet.registryId());
         Registry<?> registry = RegistryManager.getAsId(packet.registryId());
 
+        if (packet.registryId().equalsIgnoreCase("all")) {
+            RegistryManager.entries().forEach(entry -> {
+                this.handler.send(new UpdateDataPacket.ResponseDataS2CPacket(entry.getRegistryId(), (List<SynchronizeData<?>>) entry.getAll()));
+            });
+
+            return;
+        }
         if (registry == null) {
             logger.warn("Registry {} not found", packet.registryId());
             logger.warn("skipping this packet...");
@@ -60,7 +66,7 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
         try {
             KioskNettyServer server = (KioskNettyServer) handler.connection;
             PrivateKey privateKey = server.getKeyPair().getPrivate();
-           if (!packet.verifySignedNonce(this.nonce, privateKey)) {
+            if (!packet.verifySignedNonce(this.nonce, privateKey)) {
                 throw new IllegalStateException("Invalid nonce");
             }
 
@@ -70,9 +76,25 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
             Cipher decryptCipher = NetworkEncryptionUtils.cipherFromKey(Cipher.DECRYPT_MODE, secretKey);
 
             this.handler.encrypt(encryptCipher, decryptCipher);
+            this.handler.send(new EncryptCompleteS2CPacket(System.currentTimeMillis()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void onUpdateReceived(DataAddedC2SPacket packet) {
+        Registry<?> registry = RegistryManager.getAsId(packet.registryId());
+        registry.add(packet.data().getRegistryElementId(), packet.data());
+
+        KioskNettyServer server = (KioskNettyServer) handler.connection;
+        server.getHandlers().forEach(handler ->
+                handler.send(new UpdateDataPacket.ResponseDataS2CPacket(
+                                registry.getRegistryId(),
+                                (List<SynchronizeData<?>>) registry.getAll()
+                        )
+                )
+        );
     }
 
     @Override

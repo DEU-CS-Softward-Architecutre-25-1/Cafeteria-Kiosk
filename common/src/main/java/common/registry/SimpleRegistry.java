@@ -91,6 +91,25 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
     }
 
     @Override
+    public void addAll(List<SynchronizeData<?>> dataList) {
+        try {
+            lock.lock();
+            dataList.forEach(data -> {
+                if (!clazz.isAssignableFrom(data.getClass())) {
+                    throw new IllegalArgumentException("Entry is not of type " + clazz.getName());
+                }
+                this.ITEMS.add((T) data);
+                this.entryToId.put((T) data, data.getRegistryElementId());
+                this.idToEntry.put(data.getRegistryElementId(), (T) data);
+                this.rawIndexToEntry.put(size(), (T) data);
+                this.entryToRawIndex.put((T) data, size());
+            });
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
     public @NotNull Codec<T> getCodec() {
         return this.codec;
     }

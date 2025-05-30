@@ -1,4 +1,4 @@
 dependencies {
-    shadow(project(':common'))
+    implementation(project(":common"))
     testImplementation(project(":common"))
 }

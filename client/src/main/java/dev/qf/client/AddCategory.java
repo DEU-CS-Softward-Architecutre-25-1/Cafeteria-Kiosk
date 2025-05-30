@@ -1,4 +1,11 @@
-package common;
+package dev.qf.client;
+
+import common.Category;
+import common.network.Connection;
+import common.network.packet.DataAddedC2SPacket;
+import common.registry.RegistryManager;
+import common.util.Container;
+import dev.qf.client.network.KioskNettyClient;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -32,8 +39,12 @@ public class AddCategory {
             return false;
         }
         // 새 카테고리는 빈 메뉴 리스트로 생성
+//        Category newCategory = new Category(categoryId, categoryName, new ArrayList<>());
+//        categoryList.add(newCategory);
+        // rewrite by @biryeongtrain
         Category newCategory = new Category(categoryId, categoryName, new ArrayList<>());
-        categoryList.add(newCategory);
+        KioskNettyClient client = (KioskNettyClient) Container.get(Connection.class);
+        client.sendSerializable(new DataAddedC2SPacket(RegistryManager.CATEGORIES.getRegistryId(), newCategory));
         return true;
     }
 }

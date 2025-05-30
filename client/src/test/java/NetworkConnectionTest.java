@@ -2,6 +2,7 @@ import common.network.Connection;
 import common.network.packet.HandShakeC2SInfo;
 import common.network.packet.UpdateDataPacket;
 import common.util.Container;
+import dev.qf.client.CategoryManagementUI;
 import dev.qf.client.Main;
 import dev.qf.client.network.KioskNettyClient;
 import io.netty.channel.ChannelFuture;
@@ -27,8 +28,7 @@ public class NetworkConnectionTest {
 //        }
         Thread.sleep(1000);
 
-        ChannelFuture itemRequest = client.sendSerializable(new UpdateDataPacket.RequestDataC2SPacket("options"));
-        ChannelFuture optionGroupRequest = client.sendSerializable(new UpdateDataPacket.RequestDataC2SPacket("option_groups"));
+        ChannelFuture itemRequest = client.sendSerializable(new UpdateDataPacket.RequestDataC2SPacket("all"));
         Thread.sleep(2000);
         Assertions.assertTrue(future.isSuccess());
     }
