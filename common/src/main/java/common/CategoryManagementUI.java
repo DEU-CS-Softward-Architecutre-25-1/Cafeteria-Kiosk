@@ -7,10 +7,8 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class CategoryManagementUI extends JFrame {
-    // 카테고리 리스트와 컨트롤러
-    private final List<Category> categoryList = new ArrayList<>();
-    private final AddCategory addCategoryController = new AddCategory(categoryList);
-    private final DeleteCategory deleteCategoryController = new DeleteCategory(categoryList);
+    private final CategoryService categoryService = CategoryService.getInstance();
+    private MenuService menuService;
 
     private JPanel categoriesPanel;
     private JButton addCategoryButton;
@@ -18,6 +16,14 @@ public class CategoryManagementUI extends JFrame {
     private JButton closeButton;
 
     public CategoryManagementUI() {
+        this.menuService = new MenuService(categoryService.getCategoryList());
+        initComponents();
+        initEventHandlers();
+        refreshCategories();
+    }
+
+    public CategoryManagementUI(MenuService menuService) {
+        this.menuService = menuService;
         initComponents();
         initEventHandlers();
         refreshCategories();
@@ -43,7 +49,7 @@ public class CategoryManagementUI extends JFrame {
 
         setSize(600, 400);
         setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 
     private void initEventHandlers() {
@@ -55,26 +61,94 @@ public class CategoryManagementUI extends JFrame {
         closeButton.addActionListener(e -> categoryClose());
     }
 
-    // 카테고리 추가 팝업 창 열기
     public void categoryManagementButton() {
-        AddCategoryUI dialog = new AddCategoryUI(this, addCategoryController);
+        showAddCategoryDialog();
+    }
+
+    private void showAddCategoryDialog() {
+        JDialog dialog = new JDialog(this, "카테고리 추가", true);
+
+        JTextField cateIdField = new JTextField(15);
+        JTextField cateNameField = new JTextField(15);
+        JButton addButton = new JButton("추가");
+        JButton cancelButton = new JButton("취소");
+
+        JPanel inputPanel = new JPanel(new GridLayout(2, 2, 5, 5));
+        inputPanel.add(new JLabel("카테고리 ID:"));
+        inputPanel.add(cateIdField);
+        inputPanel.add(new JLabel("카테고리 이름:"));
+        inputPanel.add(cateNameField);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(addButton);
+        buttonPanel.add(cancelButton);
+
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.add(inputPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        addButton.addActionListener(e -> {
+            String id = cateIdField.getText().trim();
+            String name = cateNameField.getText().trim();
+
+            boolean success = categoryService.addCategory(id, name);
+            if (success) {
+                JOptionPane.showMessageDialog(dialog, name + " 카테고리가 추가되었습니다.");
+                dialog.dispose();
+                refreshCategories();
+            } else {
+                JOptionPane.showMessageDialog(dialog, "카테고리 추가에 실패했습니다.\nID와 이름을 확인해주세요.", "오류", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
 
-    // 카테고리 목록 UI
     private void refreshCategories() {
         categoriesPanel.removeAll();
-        for (Category category : categoryList) {
+        for (Category category : categoryService.getAllCategories()) {
             JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
             JButton btnCat = new JButton(category.cateName());
             JButton btnDel = new JButton("X");
             btnDel.setMargin(new Insets(1, 1, 1, 1));
 
-            // 삭제 버튼
             btnDel.addActionListener(ev -> {
-                deleteCategoryController.deleteCategory(category.cateId());
-                JOptionPane.showMessageDialog(this, "삭제되었습니다.");
-                refreshCategories();
+                int menuCount = menuService.getMenusByCategory(category.cateId()).size();
+
+                String message;
+                if (menuCount > 0) {
+                    message = String.format("'%s' 카테고리를 삭제하시겠습니까?\n이 카테고리에 속한 %d개의 메뉴도 함께 삭제됩니다.",
+                            category.cateName(), menuCount);
+                } else {
+                    message = String.format("'%s' 카테고리를 삭제하시겠습니까?", category.cateName());
+                }
+
+                int result = JOptionPane.showConfirmDialog(this,
+                        message,
+                        "카테고리 삭제",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE);
+
+                if (result == JOptionPane.YES_OPTION) {
+                    int deletedMenus = menuService.deleteMenusByCategory(category.cateId());
+                    boolean success = categoryService.deleteCategory(category.cateId());
+
+                    if (success) {
+                        if (menuCount > 0) {
+                            JOptionPane.showMessageDialog(this,
+                                    String.format("카테고리와 관련 메뉴 %d개가 모두 삭제되었습니다.", menuCount));
+                        } else {
+                            JOptionPane.showMessageDialog(this, "카테고리가 삭제되었습니다.");
+                        }
+                        refreshCategories();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "삭제에 실패했습니다.", "오류", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
             });
 
             item.add(btnCat);
@@ -85,12 +159,10 @@ public class CategoryManagementUI extends JFrame {
         categoriesPanel.repaint();
     }
 
-    // 저장 버튼
     public void categorySaveButton() {
         JOptionPane.showMessageDialog(this, "저장되었습니다.");
     }
 
-    // 닫기 버튼
     public void categoryClose() {
         dispose();
     }
