@@ -131,15 +131,12 @@ public class OrderDetailView extends JDialog {
     }
 
     private String formatOptions(Map<String, Option> selectedOptions) {
-        if (selectedOptions.isEmpty()) {
+        if (selectedOptions == null || selectedOptions.isEmpty()) {
             return "(기본 옵션)";
         }
-
-        String optionsText = selectedOptions.entrySet().stream()
-                .map(entry -> entry.getKey() + ": " + entry.getValue().name())
-                .collect(Collectors.joining(", "));
-
-        return "(" + optionsText + ")";
+        return selectedOptions.entrySet().stream()
+                .map(e -> e.getKey() + ": " + e.getValue().name())
+                .collect(Collectors.joining(", ", "(", ")"));
     }
 
     private Order getOrderDetail(int orderId) {
