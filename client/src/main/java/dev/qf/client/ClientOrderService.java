@@ -29,11 +29,14 @@ public class ClientOrderService implements OrderService {
         );
 
 
-        Map<String, Option> selectedOptions1 = new HashMap<>();
-        selectedOptions1.put(tempGroup.name(), tempHot); // 옵션 그룹 이름을 key로 사용
-        selectedOptions1.put(iceGroup.name(), iceNone);
 
-        OrderItem item1 = new OrderItem(americano, selectedOptions1, 2);
+
+        Map<String, Option> selectedOptions = new HashMap<>();
+        selectedOptions.put("온도", tempHot);
+        selectedOptions.put("얼음 양", iceNone);
+
+        OrderItem item1 = new OrderItem(americano, selectedOptions, 2);
+
         Cart cart1 = new Cart(Map.of(item1, 1));
 
         orders.add(new Order(1, "KIOSK-001", LocalDateTime.now(), OrderStatus.PENDING, cart1));
