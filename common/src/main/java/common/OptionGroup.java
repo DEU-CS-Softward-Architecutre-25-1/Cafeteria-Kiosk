@@ -1,5 +1,7 @@
 package common;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import org.jetbrains.annotations.TestOnly;
 
 import java.util.List;
@@ -12,13 +14,17 @@ public record OptionGroup(
         List<Option> options
 ) {
 
+    public static final Codec<OptionGroup> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            Codec.STRING.fieldOf("id").forGetter(OptionGroup::id),
+            Codec.STRING.fieldOf("name").forGetter(OptionGroup::name),
+            Codec.BOOL.fieldOf("required").forGetter(OptionGroup::required),
+            Option.CODEC.listOf().fieldOf("options").forGetter(OptionGroup::options)
+    ).apply(instance, OptionGroup::new));
 
     @TestOnly
-    //임시로 테스트를 위해 넣은 예시
     public static List<OptionGroup> loadOptionGroups(String menuId) {
-        // 메뉴별 옵션 그룹 정의
         Map<String, List<OptionGroup>> mockOptionGroups = Map.of(
-                "menu001", List.of( // 아메리카노
+                "menu001", List.of(
                         new OptionGroup(
                                 "temp", "온도", true,
                                 List.of(
@@ -35,7 +41,7 @@ public record OptionGroup(
                                 )
                         )
                 ),
-                "menu002", List.of( // 카페라떼
+                "menu002", List.of(
                         new OptionGroup(
                                 "temp", "온도", true,
                                 List.of(
@@ -53,7 +59,7 @@ public record OptionGroup(
                                 )
                         )
                 ),
-                "menu003", List.of( // 바닐라라떼
+                "menu003", List.of(
                         new OptionGroup(
                                 "syrup", "시럽 선택", false,
                                 List.of(
