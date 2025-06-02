@@ -120,11 +120,9 @@ public class OrderDetailView extends JDialog {
     }
 
     private Order getOrderDetail(int orderId) {
-        for (Order order : ownerMainUI.getOrderService().getOrderList()) {
-            if (order.orderId() == orderId) {
-                return order;
-            }
-        }
-        return Order.EMPTY;
+        return ownerMainUI.getOrderService().getOrderList().stream()
+                .filter(order -> order.orderId() == orderId)
+                .findFirst()
+                .orElse(Order.EMPTY);
     }
 }

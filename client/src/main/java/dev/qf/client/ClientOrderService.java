@@ -28,8 +28,9 @@ public class ClientOrderService implements OrderService {
                 List.of(tempGroup, iceGroup)
         );
 
+
         Map<String, Option> selectedOptions1 = new HashMap<>();
-        selectedOptions1.put(tempGroup.name(), tempHot);
+        selectedOptions1.put(tempGroup.name(), tempHot); // 옵션 그룹 이름을 key로 사용
         selectedOptions1.put(iceGroup.name(), iceNone);
 
         OrderItem item1 = new OrderItem(americano, selectedOptions1, 2);
