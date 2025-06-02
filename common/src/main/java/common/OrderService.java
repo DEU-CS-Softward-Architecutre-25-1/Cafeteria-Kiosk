@@ -6,4 +6,5 @@ public interface OrderService {
     List<Order> getOrderList();
     void acceptOrder(int orderId);
     void cancelOrder(int orderId);
+    void updateOrderStatus(int orderId, OrderStatus newStatus);
 }

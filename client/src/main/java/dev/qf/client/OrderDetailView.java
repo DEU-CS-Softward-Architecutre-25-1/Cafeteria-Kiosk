@@ -2,9 +2,9 @@ package dev.qf.client;
 
 import javax.swing.*;
 import java.awt.*;
-import common.OrderItem;
-import common.Order;
-import common.Cart;
+import common.*;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class OrderDetailView extends JDialog {
     private OwnerMainUI ownerMainUI;
@@ -45,18 +45,15 @@ public class OrderDetailView extends JDialog {
             contentPanel.add(emptyLabel);
         } else {
             for (var itemEntry : cart.getItems().entrySet()) {
-                JLabel menuLabel = new JLabel(itemEntry.getKey().getMenuItem().name() + " " + itemEntry.getValue() + "개");
+                OrderItem orderItem = itemEntry.getKey();
+                int quantity = itemEntry.getValue();
+
+                JLabel menuLabel = new JLabel(orderItem.getMenuItem().name() + " " + quantity + "개");
                 menuLabel.setFont(new Font("맑은 고딕", Font.BOLD, 20));
                 menuLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
                 contentPanel.add(menuLabel);
 
-                String optionText;
-                if (itemEntry.getKey().getMenuItem().name().contains("케이크")) {
-                    // TODO : FIX THIS LOGIC.
-                    optionText = "(옵션: " + itemEntry.getKey().getSelectedOptions() + ")";
-                } else {
-                    optionText = "(regular, " + itemEntry.getKey().getSelectedOptions() + ")";
-                }
+                String optionText = formatOptions(orderItem.getSelectedOptions());
                 JLabel optionLabel = new JLabel(optionText);
                 optionLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 18));
                 optionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -68,7 +65,6 @@ public class OrderDetailView extends JDialog {
 
         JPanel infoPanel = new JPanel(new GridLayout(1, 2, 2, 2));
         infoPanel.setOpaque(false);
-        infoPanel.setMaximumSize(new Dimension(250, 36));
         JLabel packLabel = new JLabel("포장 :");
         packLabel.setFont(new Font("맑은 고딕", Font.BOLD, 20));
         JLabel packValue = new JLabel("아니요");
@@ -81,55 +77,55 @@ public class OrderDetailView extends JDialog {
         JScrollPane scrollPane = new JScrollPane(contentPanel);
         scrollPane.setBorder(null);
         scrollPane.setBackground(Color.WHITE);
-        scrollPane.getViewport().setBackground(Color.WHITE);
-
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
         JPanel buttonPanel = new JPanel();
         buttonPanel.setOpaque(false);
-        JButton cancelBtn = new JButton("주문 취소");
-        cancelBtn.setBackground(new Color(204, 0, 0));
-        cancelBtn.setForeground(Color.WHITE);
-        cancelBtn.setFocusPainted(false);
-        cancelBtn.setFont(new Font("맑은 고딕", Font.BOLD, 20));
-        cancelBtn.setPreferredSize(new Dimension(140, 48));
+        JButton cancelBtn = createButton("주문 취소", new Color(204, 0, 0));
+        JButton acceptBtn = createButton("주문 수락", new Color(51, 153, 255));
 
-        JButton acceptBtn = new JButton("주문 수락");
-        acceptBtn.setBackground(new Color(51, 153, 255));
-        acceptBtn.setForeground(Color.WHITE);
-        acceptBtn.setFocusPainted(false);
-        acceptBtn.setFont(new Font("맑은 고딕", Font.BOLD, 20));
-        acceptBtn.setPreferredSize(new Dimension(140, 48));
-
-        cancelBtn.addActionListener(e -> {
-            ownerMainUI.getOrderService().cancelOrder(orderId);
-            ownerMainUI.loadOrderData();
-            JOptionPane.showMessageDialog(this, "주문이 취소되었습니다.");
-            dispose();
-        });
-
-        acceptBtn.addActionListener(e -> {
-            ownerMainUI.getOrderService().acceptOrder(orderId);
-            ownerMainUI.loadOrderData();
-            JOptionPane.showMessageDialog(this, "주문이 수락되었습니다.");
-            dispose();
-        });
+        cancelBtn.addActionListener(e -> handleOrderAction(OrderStatus.CANCELED, "주문이 취소되었습니다."));
+        acceptBtn.addActionListener(e -> handleOrderAction(OrderStatus.ACCEPTED, "주문이 수락되었습니다."));
 
         buttonPanel.add(cancelBtn);
         buttonPanel.add(Box.createHorizontalStrut(20));
         buttonPanel.add(acceptBtn);
-
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         setContentPane(mainPanel);
     }
 
-    private Order getOrderDetail(int orderId) {
-        for (Order order : ownerMainUI.getOrderService().getOrderList()) {
-            if (order.orderId() == orderId) {
-                return order;
-            }
+    private JButton createButton(String text, Color bgColor) {
+        JButton btn = new JButton(text);
+        btn.setBackground(bgColor);
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setFont(new Font("맑은 고딕", Font.BOLD, 20));
+        btn.setPreferredSize(new Dimension(140, 48));
+        return btn;
+    }
+
+    private void handleOrderAction(OrderStatus status, String message) {
+        ownerMainUI.getOrderService().updateOrderStatus(orderId, status);
+        ownerMainUI.loadOrderData();
+        JOptionPane.showMessageDialog(this, message);
+        dispose();
+    }
+
+    private String formatOptions(Map<String, Option> selectedOptions) {
+        if (selectedOptions == null || selectedOptions.isEmpty()) {
+            return "(기본 옵션)";
         }
-        return Order.EMPTY;
+        return selectedOptions.entrySet().stream()
+                .map(e -> e.getKey() + ": " + e.getValue().name())
+                .collect(Collectors.joining(", ", "(", ")"));
+    }
+
+
+    private Order getOrderDetail(int orderId) {
+        return ownerMainUI.getOrderService().getOrderList().stream()
+                .filter(order -> order.orderId() == orderId)
+                .findFirst()
+                .orElse(Order.EMPTY);
     }
 }

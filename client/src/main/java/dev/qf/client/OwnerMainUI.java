@@ -42,7 +42,8 @@ public class OwnerMainUI extends JFrame {
         JTableHeader tableHeader = orderTable.getTableHeader();
         tableHeader.setFont(new Font("맑은 고딕", Font.BOLD, 20));
 
-        // 주문상태 컬럼(2번 인덱스)에만 컬러 렌더러 적용
+        tableHeader.setReorderingAllowed(false);
+
         orderTable.getColumnModel().getColumn(2).setCellRenderer(new StatusCellRenderer());
 
         JPanel buttonPanel = new JPanel();
