@@ -28,53 +28,14 @@ public class ClientOrderService implements OrderService {
                 List.of(tempGroup, iceGroup)
         );
 
-        Menu latte = new Menu(
-                "menu002",
-                "카페라떼",
-                5000,
-                "COFFEE",
-                Path.of("images/latte.jpg"),
-                "부드러운 우유와 커피의 조화",
-                List.of(tempGroup)
-        );
-
         Map<String, Option> selectedOptions1 = new HashMap<>();
         selectedOptions1.put(tempGroup.name(), tempHot);
         selectedOptions1.put(iceGroup.name(), iceNone);
 
-        OrderItem item1 = new OrderItem(
-                americano,
-                selectedOptions1,
-                2
-        );
-
-        Map<String, Option> selectedOptions2 = new HashMap<>();
-        selectedOptions2.put(tempGroup.name(), tempCold);
-
-        OrderItem item2 = new OrderItem(
-                latte,
-                selectedOptions2,
-                1
-        );
-
+        OrderItem item1 = new OrderItem(americano, selectedOptions1, 2);
         Cart cart1 = new Cart(Map.of(item1, 1));
-        Cart cart2 = new Cart(Map.of(item2, 1));
 
-        orders.add(new Order(
-                1,
-                "KIOSK-001",
-                LocalDateTime.now(),
-                OrderStatus.PENDING,
-                cart1
-        ));
-
-        orders.add(new Order(
-                2,
-                "KIOSK-002",
-                LocalDateTime.now().minusMinutes(10),
-                OrderStatus.ACCEPTED,
-                cart2
-        ));
+        orders.add(new Order(1, "KIOSK-001", LocalDateTime.now(), OrderStatus.PENDING, cart1));
     }
 
     @Override
@@ -84,20 +45,20 @@ public class ClientOrderService implements OrderService {
 
     @Override
     public void acceptOrder(int orderId) {
-        for (int i = 0; i < orders.size(); i++) {
-            Order order = orders.get(i);
-            if (order.orderId() == orderId) {
-                orders.set(i, order.withStatus(OrderStatus.ACCEPTED));
-            }
-        }
+        updateOrderStatus(orderId, OrderStatus.ACCEPTED);
     }
 
     @Override
     public void cancelOrder(int orderId) {
+        updateOrderStatus(orderId, OrderStatus.CANCELED);
+    }
+
+    @Override
+    public void updateOrderStatus(int orderId, OrderStatus newStatus) {
         for (int i = 0; i < orders.size(); i++) {
             Order order = orders.get(i);
             if (order.orderId() == orderId) {
-                orders.set(i, order.withStatus(OrderStatus.CANCELED));
+                orders.set(i, order.withStatus(newStatus));
             }
         }
     }
