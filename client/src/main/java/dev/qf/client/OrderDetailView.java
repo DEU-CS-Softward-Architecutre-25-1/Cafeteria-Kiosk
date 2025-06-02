@@ -5,6 +5,9 @@ import java.awt.*;
 import common.OrderItem;
 import common.Order;
 import common.Cart;
+import common.Option;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class OrderDetailView extends JDialog {
     private OwnerMainUI ownerMainUI;
@@ -45,22 +48,25 @@ public class OrderDetailView extends JDialog {
             contentPanel.add(emptyLabel);
         } else {
             for (var itemEntry : cart.getItems().entrySet()) {
-                JLabel menuLabel = new JLabel(itemEntry.getKey().getMenuItem().name() + " " + itemEntry.getValue() + "개");
+                OrderItem orderItem = itemEntry.getKey();
+                int quantity = itemEntry.getValue();
+
+                JLabel menuLabel = new JLabel(orderItem.getMenuItem().name() + " " + quantity + "개");
                 menuLabel.setFont(new Font("맑은 고딕", Font.BOLD, 20));
                 menuLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
                 contentPanel.add(menuLabel);
 
-                String optionText;
-                if (itemEntry.getKey().getMenuItem().name().contains("케이크")) {
-                    // TODO : FIX THIS LOGIC.
-                    optionText = "(옵션: " + itemEntry.getKey().getSelectedOptions() + ")";
-                } else {
-                    optionText = "(regular, " + itemEntry.getKey().getSelectedOptions() + ")";
-                }
+                String optionText = formatOptions(orderItem.getSelectedOptions());
                 JLabel optionLabel = new JLabel(optionText);
                 optionLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 18));
                 optionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
                 contentPanel.add(optionLabel);
+
+                JLabel priceLabel = new JLabel("가격: " + orderItem.getTotalPrice() + "원");
+                priceLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+                priceLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                priceLabel.setForeground(new Color(100, 100, 100));
+                contentPanel.add(priceLabel);
 
                 contentPanel.add(Box.createVerticalStrut(8));
             }
@@ -122,6 +128,18 @@ public class OrderDetailView extends JDialog {
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         setContentPane(mainPanel);
+    }
+
+    private String formatOptions(Map<String, Option> selectedOptions) {
+        if (selectedOptions.isEmpty()) {
+            return "(기본 옵션)";
+        }
+
+        String optionsText = selectedOptions.entrySet().stream()
+                .map(entry -> entry.getKey() + ": " + entry.getValue().name())
+                .collect(Collectors.joining(", "));
+
+        return "(" + optionsText + ")";
     }
 
     private Order getOrderDetail(int orderId) {
