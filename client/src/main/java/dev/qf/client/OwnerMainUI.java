@@ -91,13 +91,23 @@ public class OwnerMainUI extends JFrame {
         worker.execute();
     }
 
+    // 상태를 한글로 변환하는 메서드 추가
+    private String convertStatusToKorean(common.OrderStatus status) {
+        return switch (status) {
+            case ACCEPTED -> "수락됨";
+            case CANCELED -> "취소됨";
+            case PENDING -> "대기중";
+            case UNKNOWN -> "알수없음";
+        };
+    }
+
     private void updateOrderTable(List<Order> orders) {
         tableModel.setRowCount(0);
         for (Order order : orders) {
             Object[] rowData = {
                     order.orderId(),
                     order.orderTime().format(TIME_FORMATTER),
-                    order.status()
+                    convertStatusToKorean(order.status())
             };
             tableModel.addRow(rowData);
         }

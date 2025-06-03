@@ -5,7 +5,8 @@ import common.Option;
 import common.OptionGroup;
 import common.OrderItem;
 
-import java.util.HashMap; // HashMap import 추가
+import javax.swing.JOptionPane;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +18,12 @@ public class OptionSelectionController {
          현재는 String 키(OptionGroup 이름)의 존재 유무만 확인.*/
         for (OptionGroup group : rules) {
             if (group.required() && !selectedOptions.containsKey(group.name())) {
-                System.err.println("필수 옵션 그룹 '" + group.name() + "'이(가) 선택되지 않았습니다.");
+                JOptionPane.showMessageDialog(
+                        null,
+                        "필수 옵션 그룹 '" + group.name() + "'이(가) 선택되지 않았습니다.",
+                        "옵션 선택 오류",
+                        JOptionPane.WARNING_MESSAGE
+                );
                 return false;
             }
         }
@@ -48,11 +54,15 @@ public class OptionSelectionController {
             } else {
                 // 오류 처리: 해당 이름을 가진 OptionGroup을 메뉴에서 찾을 수 없음
                 // 이 경우는 로직상 발생하기 어렵거나, 데이터 불일치를 의미할 수 있음
-                System.err.println("경고: 옵션 그룹 '" + optionGroupName + "'을(를) 메뉴 '" + menu.name() + "'에서 찾을 수 없습니다.");
+                JOptionPane.showMessageDialog(
+                        null,
+                        "옵션 그룹 '" + optionGroupName + "'을(를) 메뉴 '" + menu.name() + "'에서 찾을 수 없습니다.",
+                        "옵션 그룹 오류",
+                        JOptionPane.ERROR_MESSAGE
+                );
             }
         }
 
-        // 변환된 Map<OptionGroup, Option> 타입의 맵을 사용하여 OrderItem 생성
         return new OrderItem(menu, groupKeyedSelectedOptions, quantity);
     }
 }
