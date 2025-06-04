@@ -1,3 +1,7 @@
+plugins {
+    id 'application'
+}
+
 repositories {
     maven { url "https://api.modrinth.com/maven" }
 }
@@ -6,4 +10,8 @@ dependencies {
     implementation("com.zaxxer:HikariCP:6.3.0")
     implementation("net.sf.jopt-simple:jopt-simple:6.0-alpha-3")
     implementation("maven.modrinth:sqlib:3.2.9")
+}
+
+application {
+    mainClass = "dev.qf.server.Main"
 }

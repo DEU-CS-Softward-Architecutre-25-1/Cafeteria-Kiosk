@@ -1,4 +1,11 @@
+plugins {
+    id "application"
+}
 dependencies {
     implementation(project(":common"))
     testImplementation(project(":common"))
+}
+
+application {
+    mainClassName = "dev.qf.client.Main"
 }

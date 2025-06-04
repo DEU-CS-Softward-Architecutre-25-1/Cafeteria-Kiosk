@@ -26,13 +26,12 @@ public class Main {
                     .build()
     );
     private static Thread mainThread;
+
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
         mainThread = Thread.currentThread();
         ChannelFuture future = INSTANCE.run();
 
-        ChannelEstablishedEvent.EVENT.register((handler -> {
-            mainThread.interrupt();
-        }));
+        ChannelEstablishedEvent.EVENT.register((handler -> mainThread.interrupt()));
         synchronized (mainThread) {
             try {
                 mainThread.wait();
@@ -46,9 +45,5 @@ public class Main {
             Thread.sleep(1000);
         }
         SwingUtilities.invokeAndWait(() -> {new CategoryManagementUI().setVisible(true);});
-    }
-
-    static {
-
     }
 }
