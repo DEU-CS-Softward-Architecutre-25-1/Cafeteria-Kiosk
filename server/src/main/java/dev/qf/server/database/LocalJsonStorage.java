@@ -62,7 +62,7 @@ public class LocalJsonStorage implements ExternalDataManager {
                 pathStream.forEach(file -> {
                     if (Files.isRegularFile(file)) {
                         try {
-                            String str = Files.readString(path);
+                            String str = Files.readString(file);
                             DataResult<?> result = registry
                                     .getCodec()
                                     .decode(JsonOps.INSTANCE, GSON.fromJson(str, JsonObject.class));

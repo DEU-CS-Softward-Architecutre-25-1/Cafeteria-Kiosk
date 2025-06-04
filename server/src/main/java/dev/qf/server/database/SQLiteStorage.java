@@ -63,7 +63,7 @@ public class SQLiteStorage implements ExternalDataManager {
             try {
                 KioskDBSerializer.serialize(store.getOrCreateContainer("id", data.getRegistryElementId()), (SynchronizeData<?>) data);
             } catch (Exception e) {
-                logger.error("Failed to serialize data for registry element {}", registry.getRegistryId());
+                logger.error("Failed to serialize data for registry element {}", data.getRegistryElementId());
                 logger.error("data : {}", data);
                 logger.error(e.getMessage());
             }
