@@ -82,12 +82,12 @@ public class KioskDBSerializer {
             String name = dataContainer.get(JavaTypes.STRING, "name").orElseThrow();
             boolean required = dataContainer.get(JavaTypes.BOOL, "required").orElse(false);
             String[] options = dataContainer.get(JavaTypes.STRING, "options").orElseThrow().split(",");
-            Option[] optionArray = Arrays.stream(options)
-                    .map(optionId -> RegistryManager.OPTIONS.getById(optionId)
+            List<Option> optionArray = options[0].isBlank() ? List.of() : Arrays.stream(options)
+                    .map(optionId -> RegistryManager.OPTIONS.getById(optionId.trim())
                             .orElseThrow(() -> new IllegalStateException("Option not found : " + optionId)))
-                    .toArray(Option[]::new);
+                    .toList();
 
-            return new OptionGroup(id, name, required, Arrays.stream(optionArray).toList());
+            return new OptionGroup(id, name, required, optionArray);
         });
 
         registerSerializer(Menu.class, (container, menu) -> {
@@ -111,10 +111,10 @@ public class KioskDBSerializer {
             Path imagePath = dataContainer.get(PATH, "image_path").orElseThrow();
             String description = dataContainer.get(JavaTypes.STRING, "description").orElseThrow();
             String[] optionGroups = dataContainer.get(JavaTypes.STRING, "option_groups").orElseThrow().split(",");
-            List<OptionGroup> optionGroupList = Arrays
+            List<OptionGroup> optionGroupList = optionGroups[0].isBlank() ? List.of() : Arrays
                     .stream(optionGroups)
                     .map(optionId -> RegistryManager.OPTION_GROUPS
-                        .getById(optionId)
+                        .getById(optionId.trim())
                         .orElseThrow(() -> new IllegalStateException("OptionGroup not found")))
                     .toList();
 
@@ -133,10 +133,10 @@ public class KioskDBSerializer {
             String id = dataContainer.get(JavaTypes.STRING, "id").orElseThrow();
             String name = dataContainer.get(JavaTypes.STRING, "name").orElseThrow();
             String[] menuIds = dataContainer.get(JavaTypes.STRING, "menus").orElseThrow().split(",");
-            List<Menu> menuList = Arrays
+            List<Menu> menuList =  menuIds[0].isBlank() ? List.of() : Arrays
                     .stream(menuIds)
-                    .map(menuId -> RegistryManager.MENUS.getById(menuId)
-                            .orElseThrow(() -> new IllegalStateException("Menu not found")))
+                    .map(menuId -> RegistryManager.MENUS.getById(menuId.trim())
+                            .orElseThrow(() -> new IllegalStateException("Menu not found : " + menuId)))
                     .toList();
 
             return new Category(id, name, menuList);
