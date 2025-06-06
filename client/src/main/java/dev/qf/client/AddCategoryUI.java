@@ -1,8 +1,5 @@
 package dev.qf.client;
 
-import common.Category;
-import dev.qf.client.event.DataReceivedEvent;
-
 import javax.swing.*;
 import java.awt.*;
 

@@ -38,13 +38,26 @@ public class AddCategory {
         if (!contentsVerification(categoryId, categoryName)) {
             return false;
         }
-        // 새 카테고리는 빈 메뉴 리스트로 생성
-//        Category newCategory = new Category(categoryId, categoryName, new ArrayList<>());
-//        categoryList.add(newCategory);
-        // rewrite by @biryeongtrain
+
+        // 네트워크 연결 확인
+        Connection connection = Container.get(Connection.class);
+        if (connection == null) {
+            Category newCategory = new Category(categoryId, categoryName, new ArrayList<>());
+            categoryList.add(newCategory);
+            RegistryManager.CATEGORIES.add(categoryId, newCategory);
+            return true;
+        }
+
+        // 네트워크 연결이 있는 경우 서버에 전송
         Category newCategory = new Category(categoryId, categoryName, new ArrayList<>());
-        KioskNettyClient client = (KioskNettyClient) Container.get(Connection.class);
-        client.sendSerializable(new DataAddedC2SPacket(RegistryManager.CATEGORIES.getRegistryId(), newCategory));
-        return true;
+        KioskNettyClient client = (KioskNettyClient) connection;
+        try {
+            client.sendSerializable(new DataAddedC2SPacket(RegistryManager.CATEGORIES.getRegistryId(), newCategory));
+            return true;
+        } catch (Exception e) {
+            categoryList.add(newCategory);
+            RegistryManager.CATEGORIES.add(categoryId, newCategory);
+            return true;
+        }
     }
 }
