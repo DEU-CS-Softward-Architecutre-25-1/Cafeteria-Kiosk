@@ -9,7 +9,6 @@ import dev.qf.client.network.ClientPacketListenerFactory;
 import dev.qf.client.network.KioskNettyClient;
 import common.network.handler.factory.PacketListenerFactory;
 import common.util.Container;
-import io.netty.channel.ChannelFuture;
 import org.slf4j.Logger;
 
 import javax.swing.*;

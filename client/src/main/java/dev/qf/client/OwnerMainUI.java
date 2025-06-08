@@ -2,14 +2,17 @@ package dev.qf.client;
 
 import common.Order;
 import common.OrderService;
+import common.registry.RegistryManager;
+import dev.qf.client.event.DataReceivedEvent;
 import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
-import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -26,6 +29,12 @@ public class OwnerMainUI extends JFrame {
         this.orderService = clientOrderService;
         initializeUI();
         loadOrderData();
+
+        DataReceivedEvent.EVENT.register((handler, registry) -> {
+            if (registry == RegistryManager.ORDERS) {
+                SwingUtilities.invokeLater(this::loadOrderData);
+            }
+        });
     }
 
     private void initializeUI() {
@@ -64,7 +73,7 @@ public class OwnerMainUI extends JFrame {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 int row = orderTable.rowAtPoint(evt.getPoint());
                 if (row != -1 && evt.getButton() == java.awt.event.MouseEvent.BUTTON1) {
-                    int orderId = (Integer) orderTable.getValueAt(row, 0);
+                    int orderId = (Integer) tableModel.getValueAt(row, 0);
                     OrderDetailView detailView = new OrderDetailView(orderId, OwnerMainUI.this);
                     detailView.setVisible(true);
                 }
@@ -73,17 +82,19 @@ public class OwnerMainUI extends JFrame {
     }
 
     public void loadOrderData() {
-        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
-            List<Order> ordersToDisplay;
+        SwingWorker<List<Order>, Void> worker = new SwingWorker<>() {
             @Override
-            protected @Nullable Void doInBackground() {
-                ordersToDisplay = orderService.getOrderList();
-                return null;
+            protected @Nullable List<Order> doInBackground() {
+                return orderService.getOrderList();
             }
 
             @Override
             protected void done() {
-                updateOrderTable(ordersToDisplay);
+                try {
+                    updateOrderTable(get());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         };
         worker.execute();
@@ -94,14 +105,17 @@ public class OwnerMainUI extends JFrame {
             case ACCEPTED -> "수락됨";
             case CANCELED -> "취소됨";
             case PENDING -> "대기중";
-            case UNKNOWN -> "알수없음";
+            default -> "알수없음";
         };
     }
-
+    /*
+    하나의 데이터 목록을 한쪽(네트워크 스레드)에서는 수정하고, 다른 한쪽(UI 스레드)에서는 읽으려고 동시에 달려들 때 오류
+    발생하여 OwnerMainUI.java에서 테이블을 업데이트할 때, 원본 데이터 리스트의 사본을 만들어 전송하는것으로 수정
+     */
     private void updateOrderTable(List<Order> orders) {
         tableModel.setRowCount(0);
         if (orders != null) {
-            for (Order order : orders) {
+            for (Order order : new ArrayList<>(orders)) {
                 Object[] rowData = {
                         order.orderId(),
                         order.orderTime().format(TIME_FORMATTER),
@@ -112,8 +126,9 @@ public class OwnerMainUI extends JFrame {
         }
     }
 
+    //'주문 새로고침' 버튼의 동작을 loadOrderData() 호출에서 requestOrderListUpdate() 호출로 변경.
     private void handleRefresh(ActionEvent e) {
-        loadOrderData();
+        ((ClientOrderService) orderService).requestOrderListUpdate();
     }
 
     public OrderService getOrderService() {

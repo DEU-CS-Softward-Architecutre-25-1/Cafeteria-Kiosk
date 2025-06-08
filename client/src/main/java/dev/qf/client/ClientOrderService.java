@@ -8,8 +8,6 @@ import common.registry.RegistryManager;
 import common.registry.Registry;
 import common.network.SynchronizeData;
 
-import java.time.LocalDateTime;
-import java.nio.file.Path;
 import java.util.*;
 import org.slf4j.Logger;
 import io.netty.channel.ChannelFuture;
@@ -39,8 +37,11 @@ public class ClientOrderService implements OrderService {
         }
     }
 
-    @Override
-    public List<Order> getOrderList() {
+    /*
+    getOrderList()는 이제 데이터를 요청하지 않고, 현재 가지고 있는 데이터를 반환하는 역할만 되게 수정.
+    requestOrderListUpdate() 메소드가 새로 추가되어 '새로고침' 요청을 담당.
+     */
+    public void requestOrderListUpdate() {
         if (kioskClient != null && kioskClient.isConnected()) {
             UpdateDataPacket.RequestDataC2SPacket requestOrdersPacket = new UpdateDataPacket.RequestDataC2SPacket("orders");
             ChannelFuture future = kioskClient.sendSerializable(requestOrdersPacket.getPacketId(), requestOrdersPacket);
@@ -56,9 +57,12 @@ public class ClientOrderService implements OrderService {
                 LOGGER.error("sendSerializable for 'orders' request returned null. Packet might not have been sent.");
             }
         } else {
-            LOGGER.error("KioskNettyClient가 초기화되지 않아 주문 목록을 요청할 수 없습니다.");
+            LOGGER.error("KioskNettyClient가 연결되지 않아 주문 목록을 요청할 수 없습니다.");
         }
+    }
 
+    @Override
+    public List<Order> getOrderList() {
         Registry<?> ordersRegistry = RegistryManager.getAsId("orders");
         if (ordersRegistry != null) {
             try {
