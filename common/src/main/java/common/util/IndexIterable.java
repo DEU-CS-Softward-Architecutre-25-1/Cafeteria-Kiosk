@@ -1,6 +1,5 @@
 package common.util;
 
-import common.network.Serializable;
 import org.jetbrains.annotations.Nullable;
 
 public interface IndexIterable<T> extends Iterable<T> {
@@ -21,7 +20,7 @@ public interface IndexIterable<T> extends Iterable<T> {
     default int getRawIdOrThrow(T value) {
         int i = this.getRawId(value);
         if (i == -1) {
-            throw new IllegalArgumentException("Can't find id for '" + String.valueOf(value) + "' in map " + String.valueOf(this));
+            throw new IllegalArgumentException("Can't find id for '" + value + "' in map " + this);
         }
         return i;
     }

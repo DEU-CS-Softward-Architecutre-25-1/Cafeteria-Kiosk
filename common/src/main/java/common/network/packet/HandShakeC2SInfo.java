@@ -2,8 +2,7 @@ package common.network.packet;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import common.KioskLoggerFactory;
-import common.network.handler.server.ServerPacketListener;
+import common.network.handler.listener.ServerPacketListener;
 import org.jetbrains.annotations.NotNull;
 
 public record HandShakeC2SInfo(String id) implements SidedPacket<ServerPacketListener> {

@@ -1,6 +1,6 @@
 # User-specific stuff
 .idea/
-
+.fleet/
 *.iml
 *.ipr
 *.iws
@@ -120,3 +120,4 @@ runs/
 /logs/
 /client/logs/
 /server/logs/
+/sqlite/

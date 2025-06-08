@@ -60,6 +60,4 @@ public class OptionSelectUI extends JFrame {
         add(addButton, BorderLayout.SOUTH);
         setVisible(true);
     }
-
-    // toKeyMap 메서드 제거 (더 이상 필요 없음)
 }

@@ -1,4 +1,6 @@
-package common;
+package dev.qf.client;
+
+import common.Category;
 
 import java.util.List;
 import java.util.Optional;
