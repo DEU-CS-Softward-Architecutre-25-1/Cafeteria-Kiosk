@@ -1,4 +1,5 @@
 dependencies {
     shadow(project(':common'))
     testImplementation(project(":common"))
+    implementation project(':common') // 실행을 위해 임시로 작성
 }

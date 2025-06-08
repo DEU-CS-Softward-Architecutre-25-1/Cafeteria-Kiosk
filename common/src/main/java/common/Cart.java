@@ -24,4 +24,8 @@ public class Cart {
     public void increaseQuantity(OrderItem item) {
         items.merge(item, 1, Integer::sum);
     }
+
+    public void clear() {
+        items.clear();
+    }
 }
