@@ -2,6 +2,7 @@ package dev.qf.client;
 
 import common.Order;
 import common.OrderService;
+import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -21,15 +22,17 @@ public class OwnerMainUI extends JFrame {
     private static final DateTimeFormatter TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy년M월d일(E) HH:mm", Locale.KOREAN);
 
-    public OwnerMainUI() {
+    public OwnerMainUI(ClientOrderService clientOrderService) {
+        this.orderService = clientOrderService;
         initializeUI();
-        setupOrderService();
+        loadOrderData();
     }
 
     private void initializeUI() {
         setTitle("점주 주문 관리 시스템");
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
 
         String[] columnNames = {"주문번호", "시간", "상태"};
         tableModel = new DefaultTableModel(columnNames, 0);
@@ -69,29 +72,23 @@ public class OwnerMainUI extends JFrame {
         });
     }
 
-    private void setupOrderService() {
-        this.orderService = new ClientOrderService();
-        loadOrderData();
-    }
-
     public void loadOrderData() {
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
-            List<Order> orders;
+            List<Order> ordersToDisplay;
             @Override
-            protected Void doInBackground() {
-                orders = orderService.getOrderList();
+            protected @Nullable Void doInBackground() {
+                ordersToDisplay = orderService.getOrderList();
                 return null;
             }
 
             @Override
             protected void done() {
-                updateOrderTable(orders);
+                updateOrderTable(ordersToDisplay);
             }
         };
         worker.execute();
     }
 
-    // 상태를 한글로 변환하는 메서드 추가
     private String convertStatusToKorean(common.OrderStatus status) {
         return switch (status) {
             case ACCEPTED -> "수락됨";
@@ -103,13 +100,15 @@ public class OwnerMainUI extends JFrame {
 
     private void updateOrderTable(List<Order> orders) {
         tableModel.setRowCount(0);
-        for (Order order : orders) {
-            Object[] rowData = {
-                    order.orderId(),
-                    order.orderTime().format(TIME_FORMATTER),
-                    convertStatusToKorean(order.status())
-            };
-            tableModel.addRow(rowData);
+        if (orders != null) {
+            for (Order order : orders) {
+                Object[] rowData = {
+                        order.orderId(),
+                        order.orderTime().format(TIME_FORMATTER),
+                        convertStatusToKorean(order.status())
+                };
+                tableModel.addRow(rowData);
+            }
         }
     }
 

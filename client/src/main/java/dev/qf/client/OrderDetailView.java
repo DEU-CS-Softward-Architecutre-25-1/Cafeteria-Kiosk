@@ -9,6 +9,7 @@ import common.OptionGroup;
 import common.Order;
 import common.OrderItem;
 import common.OrderStatus;
+import common.OrderService;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -127,7 +128,6 @@ public class OrderDetailView extends JDialog {
     private void handleOrderAction(OrderStatus status, String message) {
         if (ownerMainUI != null && ownerMainUI.getOrderService() != null) {
             ownerMainUI.getOrderService().updateOrderStatus(orderId, status);
-            ownerMainUI.loadOrderData();
         }
         JOptionPane.showMessageDialog(this, message);
         dispose();
