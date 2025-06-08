@@ -24,7 +24,7 @@ public record Order(
 
     public static final Order EMPTY = new Order(-1, "UNKNOWN", LocalDateTime.MIN, OrderStatus.UNKNOWN, Cart.EMPTY);
 
-    public final static Codec<Order> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+    public final static Codec<Order> SYNC_CODEC = RecordCodecBuilder.create(instance -> instance.group(
                     Codec.INT.fieldOf("orderId").forGetter(Order::orderId),
                     Codec.STRING.fieldOf("customer").forGetter(Order::customer),
                     JavaCodecs.LOCAL_DATE_TIME.fieldOf("orderTime").forGetter(Order::orderTime),
@@ -46,7 +46,7 @@ public record Order(
 
     @Override
     public Codec<Order> getSyncCodec() {
-        return CODEC;
+        return SYNC_CODEC;
     }
 
     @Override
@@ -59,6 +59,8 @@ public record Order(
         return "order_data_element";
     }
 
+
+
     @Override
     public Order getValue() {
         return this;
@@ -66,7 +68,7 @@ public record Order(
 
     @Override
     public Codec<Order> getCodec() {
-        return CODEC;
+        return SYNC_CODEC;
     }
 
     @Override

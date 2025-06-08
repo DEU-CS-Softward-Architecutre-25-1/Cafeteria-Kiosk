@@ -9,10 +9,3 @@ dependencies {
 application {
     mainClassName = "dev.qf.client.Main"
 }
-
-shadowJar {
-    manifest {
-        attributes 'Main-Class': 'dev.qf.client.Main'
-    }
-    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
-}

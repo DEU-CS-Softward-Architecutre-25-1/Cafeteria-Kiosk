@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.nio.file.Path;
 import java.util.*;
 import org.slf4j.Logger;
-import io.netty.channel.ChannelFuture; // ChannelFuture 임포트 추가
+import io.netty.channel.ChannelFuture;
 
 public class ClientOrderService implements OrderService {
     private final List<Order> orders = Collections.synchronizedList(new ArrayList<>());
@@ -22,7 +22,6 @@ public class ClientOrderService implements OrderService {
     private OwnerMainUI ownerMainUIInstance;
 
     public ClientOrderService() {
-        // 더미 데이터 생성 코드 제거 유지
     }
 
     public void setKioskClient(KioskNettyClient client) {
@@ -44,9 +43,8 @@ public class ClientOrderService implements OrderService {
     public List<Order> getOrderList() {
         if (kioskClient != null) {
             UpdateDataPacket.RequestDataC2SPacket requestOrdersPacket = new UpdateDataPacket.RequestDataC2SPacket("orders");
-            // sendSerializable의 반환값이 null일 수 있으므로 null 체크를 추가합니다.
             ChannelFuture future = kioskClient.sendSerializable(requestOrdersPacket.getPacketId(), requestOrdersPacket);
-            if (future != null) { // null이 아닐 때만 addListener 호출
+            if (future != null) {
                 future.addListener(f -> {
                     if (f.isSuccess()) {
                         LOGGER.info("서버에 주문 목록 요청 성공: 'orders' registryId.");
@@ -105,9 +103,8 @@ public class ClientOrderService implements OrderService {
             String requestIdentifier = String.format("order_status_update:%d:%s", orderId, status.name());
             UpdateDataPacket.RequestDataC2SPacket packet = new UpdateDataPacket.RequestDataC2SPacket(requestIdentifier);
 
-            // sendSerializable의 반환값이 null일 수 있으므로 null 체크를 추가합니다.
             ChannelFuture future = kioskClient.sendSerializable(packet.getPacketId(), packet);
-            if (future != null) { // null이 아닐 때만 addListener 호출
+            if (future != null) {
                 future.addListener(f -> {
                     if (f.isSuccess()) {
                         LOGGER.info("주문 ID {}의 상태를 {}로 변경 요청 성공 (RequestDataC2SPacket 재사용).", orderId, status);
