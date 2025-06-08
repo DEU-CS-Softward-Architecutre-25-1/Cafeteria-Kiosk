@@ -57,9 +57,8 @@ public class OrderDetailView extends JDialog {
                 emptyLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
                 contentPanel.add(emptyLabel);
             } else {
-                for (var itemEntry : cart.getItems().entrySet()) {
-                    OrderItem orderItem = itemEntry.getKey();
-                    int quantity = itemEntry.getValue();
+                for (OrderItem orderItem : cart.getItems()) {
+                    int quantity = orderItem.getQuantity();
 
                     JLabel menuLabel = new JLabel(orderItem.getMenuItem().name() + " " + quantity + "개");
                     menuLabel.setFont(new Font("맑은 고딕", Font.BOLD, 20));

@@ -41,7 +41,7 @@ public class ClientOrderService implements OrderService {
 
     @Override
     public List<Order> getOrderList() {
-        if (kioskClient != null) {
+        if (kioskClient != null && kioskClient.isConnected()) {
             UpdateDataPacket.RequestDataC2SPacket requestOrdersPacket = new UpdateDataPacket.RequestDataC2SPacket("orders");
             ChannelFuture future = kioskClient.sendSerializable(requestOrdersPacket.getPacketId(), requestOrdersPacket);
             if (future != null) {
@@ -64,14 +64,10 @@ public class ClientOrderService implements OrderService {
             try {
                 @SuppressWarnings("unchecked")
                 List<Order> registeredOrders = (List<Order>) ordersRegistry.getAll();
-
-                LOGGER.info("DEBUG: getOrderList()에서 RegistryManager로부터 로드된 주문 수: {}", registeredOrders.size());
-
                 synchronized (orders) {
                     orders.clear();
                     orders.addAll(registeredOrders);
                 }
-                LOGGER.info("로컬 orders 리스트를 RegistryManager 데이터로 업데이트 완료. 현재 주문 수: {}", orders.size());
                 return Collections.unmodifiableList(orders);
             } catch (ClassCastException e) {
                 LOGGER.error("Registry 'orders' contains non-Order elements. Type mismatch.", e);
@@ -95,11 +91,15 @@ public class ClientOrderService implements OrderService {
 
     @Override
     public void updateOrderStatus(int orderId, OrderStatus newStatus) {
-        LOGGER.warn("updateOrderStatus(int, OrderStatus) was called directly. This should typically be handled by server response.");
+        if (kioskClient != null && kioskClient.isConnected()) {
+            sendOrderStatusUpdateUsingExistingPacket(orderId, newStatus);
+        } else {
+            LOGGER.error("KioskNettyClient가 연결되지 않아 주문 상태를 변경할 수 없습니다.");
+        }
     }
 
     private void sendOrderStatusUpdateUsingExistingPacket(int orderId, OrderStatus status) {
-        if (kioskClient != null) {
+        if (kioskClient != null && kioskClient.isConnected()) {
             String requestIdentifier = String.format("order_status_update:%d:%s", orderId, status.name());
             UpdateDataPacket.RequestDataC2SPacket packet = new UpdateDataPacket.RequestDataC2SPacket(requestIdentifier);
 
@@ -107,7 +107,7 @@ public class ClientOrderService implements OrderService {
             if (future != null) {
                 future.addListener(f -> {
                     if (f.isSuccess()) {
-                        LOGGER.info("주문 ID {}의 상태를 {}로 변경 요청 성공 (RequestDataC2SPacket 재사용).", orderId, status);
+                        LOGGER.info("주문 ID {}의 상태를 {}로 변경 요청 성공.", orderId, status);
                     } else {
                         LOGGER.error("주문 ID {}의 상태 변경 요청 실패: {}", orderId, f.cause().getMessage());
                     }
@@ -116,8 +116,7 @@ public class ClientOrderService implements OrderService {
                 LOGGER.error("sendSerializable for order status update returned null. Packet might not have been sent.");
             }
         } else {
-            LOGGER.error("KioskNettyClient가 초기화되지 않았습니다. 주문 상태 변경 요청을 보낼 수 없습니다. 로컬 데이터만 업데이트합니다.");
-            updateLocalOrderStatus(orderId, status);
+            LOGGER.error("KioskNettyClient가 연결되지 않았습니다. 주문 상태 변경 요청을 보낼 수 없습니다.");
         }
     }
 
@@ -127,7 +126,7 @@ public class ClientOrderService implements OrderService {
                 Order order = orders.get(i);
                 if (order.orderId() == orderId) {
                     orders.set(i, order.withStatus(newStatus));
-                    LOGGER.info("로컬에서 주문 ID {}의 상태를 {}로 업데이트 완료. 현재 주문 수: {}", orderId, newStatus, orders.size());
+                    LOGGER.info("로컬에서 주문 ID {}의 상태를 {}로 업데이트 완료.", orderId, newStatus);
                     return;
                 }
             }

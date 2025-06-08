@@ -13,6 +13,13 @@ import me.mrnavastar.sqlib.api.types.JavaTypes;
 import me.mrnavastar.sqlib.api.types.SQLibType;
 import me.mrnavastar.sqlib.impl.SQLPrimitive;
 import org.slf4j.Logger;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.mojang.serialization.JsonOps;
+import common.Cart;
+import common.Order;
+import common.OrderStatus;
+import java.time.LocalDateTime;
 
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -140,6 +147,28 @@ public class KioskDBSerializer {
                     .toList();
 
             return new Category(id, name, menuList);
+        });
+
+        //Order를 위한 직렬화/역직렬화 로직 추가
+        registerSerializer(Order.class, (container, order) -> {
+            container.put(JavaTypes.INT, "orderId", order.orderId());
+            container.put(JavaTypes.STRING, "customer", order.customer());
+            container.put(JavaTypes.STRING, "orderTime", order.orderTime().toString());
+            container.put(JavaTypes.STRING, "status", order.status().name());
+            String cartJson = Cart.CODEC.encodeStart(JsonOps.INSTANCE, order.cart()).getOrThrow().toString();
+            container.put(JavaTypes.STRING, "cart", cartJson);
+        });
+
+        registerDeserializer(Order.class, dc -> {
+            DataContainer container = (DataContainer) dc;
+            int orderId = container.get(JavaTypes.INT, "orderId").orElseThrow();
+            String customer = container.get(JavaTypes.STRING, "customer").orElseThrow();
+            LocalDateTime orderTime = LocalDateTime.parse(container.get(JavaTypes.STRING, "orderTime").orElseThrow());
+            OrderStatus status = OrderStatus.valueOf(container.get(JavaTypes.STRING, "status").orElseThrow());
+            JsonElement cartElement = JsonParser.parseString(container.get(JavaTypes.STRING, "cart").orElseThrow());
+            Cart cart = Cart.CODEC.decode(JsonOps.INSTANCE, cartElement).getOrThrow().getFirst();
+
+            return new Order(orderId, customer, orderTime, status, cart);
         });
     }
 }

@@ -2,13 +2,19 @@ package common;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import it.unimi.dsi.fastutil.objects.Reference2IntLinkedOpenHashMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-import java.util.*;
+/*
+Cart.java는 내부에 Map<OrderItem, Integer> 형태의 데이터를 가지는데
+이것을 JSON 형태로 변환(직렬화)하려고 할 때, OrderItem을 JSON의 키로 사용하려고 시도하여
+JSON 직렬화와 호환되지 않아 에러가 발생하여 수정
+ */
 
 public class Cart {
     public static Codec<Cart> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.unboundedMap(OrderItem.CODEC, Codec.INT).fieldOf("items").forGetter(Cart::getItems)
+            OrderItem.CODEC.listOf().fieldOf("items").forGetter(Cart::getItems)
     ).apply(instance, Cart::new));
 
     public static final Cart EMPTY = new Cart() {
@@ -17,31 +23,27 @@ public class Cart {
             throw new UnsupportedOperationException("Cannot add items to empty cart");
         }
     };
-    private final Reference2IntLinkedOpenHashMap<OrderItem> items;
+    private final List<OrderItem> items;
 
     public Cart() {
-        this(new Reference2IntLinkedOpenHashMap<>());
+        this(new ArrayList<>());
     }
 
-    public Cart(Map<OrderItem, Integer> override) {
-        items = new Reference2IntLinkedOpenHashMap<>(override);
+    public Cart(List<OrderItem> items) {
+        this.items = new ArrayList<>(items);
     }
 
     public void addItem(OrderItem item) {
-        items.merge(item, 1, Integer::sum);
+        this.items.add(item);
     }
 
-    public Map<OrderItem, Integer> getItems() {
-        return Collections.unmodifiableMap(items);
+    public List<OrderItem> getItems() {
+        return Collections.unmodifiableList(items);
     }
 
     public int calculateCartTotal() {
-        return items.reference2IntEntrySet().stream()
-                .mapToInt(e -> e.getKey().getTotalPrice() * e.getIntValue())
+        return items.stream()
+                .mapToInt(OrderItem::getTotalPrice)
                 .sum();
-    }
-
-    public void increaseQuantity(OrderItem item) {
-        items.merge(item, 1, Integer::sum);
     }
 }
