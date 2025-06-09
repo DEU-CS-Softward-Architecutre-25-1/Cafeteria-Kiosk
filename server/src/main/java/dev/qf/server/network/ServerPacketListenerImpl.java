@@ -14,6 +14,7 @@ import common.network.handler.SerializableHandler;
 import common.network.handler.listener.ServerPacketListener;
 import org.jetbrains.annotations.ApiStatus;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
 @ApiStatus.Internal
 public class ServerPacketListenerImpl implements ServerPacketListener {
     private final SerializableHandler handler;
-    private final Logger logger = KioskLoggerFactory.getLogger();
+    private Logger logger = LoggerFactory.getLogger("ServerPacketListenerImpl");
     private final byte[] nonce;
 
     //백업 저장소
@@ -39,6 +40,7 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
     @Override
     public void onHandShake(HandShakeC2SInfo packet) {
         handler.setId(packet.id());
+        this.logger = LoggerFactory.getLogger("PacketListener - " + packet.id());
         logger.info("HandShake received");
         KioskNettyServer server = (KioskNettyServer) handler.connection;
         this.handler.send(new HelloS2CPacket(server.getKeyPair().getPublic().getEncoded(), nonce));
@@ -256,11 +258,9 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
                 updatedMenus
         );
 
-        try {
-            RegistryManager.CATEGORIES.unfreeze();
-            RegistryManager.CATEGORIES.add(categoryId, updatedCategory);
-        } finally {
-            RegistryManager.CATEGORIES.freeze();
+        try(var categoryRegistry = RegistryManager.CATEGORIES) {
+            categoryRegistry.unfreeze();
+            categoryRegistry.add(categoryId, updatedCategory);
         }
         logger.info("Restored menu '{}' to category '{}'", menu.name(), category.cateName());
         return true;
@@ -284,11 +284,9 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
         if (defaultCategoryOpt.isEmpty()) {
             // 미분류 카테고리 생성
             defaultCategory = new Category(defaultCategoryId, "미분류", new ArrayList<>());
-            try {
+            try(RegistryManager.CATEGORIES) {
                 RegistryManager.CATEGORIES.unfreeze();
                 RegistryManager.CATEGORIES.add(defaultCategoryId, defaultCategory);
-            } finally {
-                RegistryManager.CATEGORIES.freeze();
             }
 
             logger.info("Created default category: 미분류");
@@ -306,13 +304,10 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
                 updatedMenus
         );
 
-        try {
+        try(RegistryManager.CATEGORIES) {
             RegistryManager.CATEGORIES.unfreeze();
             RegistryManager.CATEGORIES.add(defaultCategoryId, updatedCategory);
-        } finally {
-            RegistryManager.CATEGORIES.freeze();
         }
-
         logger.info("📁 Assigned orphan menu '{}' to default category '미분류'", menu.name());
     }
 
@@ -335,12 +330,10 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
             logger.info("Deleting menu: {} ({})", menu.name(), menuId);
 
             // Registry에서 메뉴 삭제
-            try {
+            try(RegistryManager.MENUS){
                 RegistryManager.MENUS.unfreeze();
                 boolean menuRemoved = RegistryManager.MENUS.remove(menuId);
                 logger.info("Menu removed from registry: {}", menuRemoved);
-            } finally {
-                RegistryManager.MENUS.freeze();
             }
 
             // 모든 카테고리에서 해당 메뉴 제거
@@ -349,11 +342,9 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
                 List<Menu> menuList = new ArrayList<>(category.menus());
                 if (menuList.removeIf(m -> m.id().equals(menuId))) {
                     logger.info("Menu '{}' removed from category '{}'", menu.name(), category.cateName());
-                    try {
+                    try(RegistryManager.CATEGORIES) {
                         RegistryManager.CATEGORIES.unfreeze();
                         RegistryManager.CATEGORIES.add(category.cateId(), new Category(category.cateId(), category.cateName(), menuList));
-                    } finally {
-                        RegistryManager.CATEGORIES.freeze();
                     }
                     isCategoryDirty = true;
                 }
@@ -396,23 +387,19 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
 
             Category category = categoryToDelete.get();
             logger.info("Deleting category: {} ({})", category.cateName(), categoryId);
-            try {
+            try(RegistryManager.MENUS) {
                 RegistryManager.MENUS.unfreeze();
                 // 카테고리에 속한 메뉴들 먼저 삭제
                 for (Menu menu : category.menus()) {
                     RegistryManager.MENUS.remove(menu.id());
                     logger.info("Deleted menu: {} from category deletion", menu.name());
                 }
-            } finally {
-                RegistryManager.MENUS.freeze();
             }
             // 카테고리 삭제
-            try {
+            try(RegistryManager.CATEGORIES) {
                 RegistryManager.CATEGORIES.unfreeze();
                 boolean categoryRemoved = RegistryManager.CATEGORIES.remove(categoryId);
                 logger.info("Category removed from registry: {}", categoryRemoved);
-            } finally {
-                RegistryManager.CATEGORIES.freeze();
             }
 
             // 클라이언트들에게 업데이트 전송
@@ -458,11 +445,9 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
             throw new IllegalStateException("Client is not encrypted");
         }
         Order order = packet.order();
-        try {
+        try(RegistryManager.ORDERS) {
             RegistryManager.ORDERS.unfreeze();
             RegistryManager.ORDERS.addOrder(order);
-        } finally {
-            RegistryManager.ORDERS.freeze();
         }
         KioskNettyServer server = (KioskNettyServer) handler.connection;
         server.broadCast(new OrderUpdatedS2CPacket(order));

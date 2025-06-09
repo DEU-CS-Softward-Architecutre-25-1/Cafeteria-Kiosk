@@ -13,7 +13,6 @@ public class OrderRegistry extends SimpleRegistry<Order> {
 
     @Override
     public Order add(String id, SynchronizeData<?> entry) {
-        if (isFrozen()) throw new IllegalStateException("Registry is frozen");
         if (!(entry instanceof Order order)) {
             throw new IllegalArgumentException("Entry must be an instance of Order");
         }
@@ -27,7 +26,7 @@ public class OrderRegistry extends SimpleRegistry<Order> {
     public Order addOrder(Order order) {
         if (isFrozen()) throw new IllegalStateException("Registry is frozen");
         try {
-            lock.lock();
+            lock.writeLock().lock();
 
             this.ITEMS.removeIf(existingOrder -> existingOrder.orderId() == order.orderId());
 
@@ -44,7 +43,7 @@ public class OrderRegistry extends SimpleRegistry<Order> {
 
             return order;
         } finally {
-            lock.unlock();
+            lock.writeLock().unlock();
         }
     }
 
@@ -53,7 +52,7 @@ public class OrderRegistry extends SimpleRegistry<Order> {
     public void addAll(List<SynchronizeData<?>> dataList) {
         if (this.isFrozen()) throw new IllegalStateException("Registry is frozen");
         try {
-            lock.lock();
+            lock.writeLock().lock();
             dataList.forEach(data -> {
                 if (!(data instanceof Order order)) {
                     this.LOGGER.warn("Entry must be an instance of Order");
@@ -71,7 +70,7 @@ public class OrderRegistry extends SimpleRegistry<Order> {
             });
 
         } finally {
-            lock.unlock();
+            lock.writeLock().unlock();
         }
     }
 

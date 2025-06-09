@@ -71,12 +71,10 @@ public class ClientPacketListenerImpl implements ClientPacketListener {
             logger.error("Received data from unknown registry : {}", packet.registryId());
             return;
         }
-        try {
+        try(registry) {
             registry.unfreeze();
             registry.clear();
             registry.addAll(packet.data());
-        } finally {
-            registry.freeze();
         }
         DataReceivedEvent.EVENT.invoker().onRegistryChanged(this.handler, registry);
     }
@@ -107,11 +105,9 @@ public class ClientPacketListenerImpl implements ClientPacketListener {
         if (existingOrder != null && !existingOrder.cart().equals(updatedOrder.cart())) {
             logger.warn("Order data seems different. Overriding. Before: {}, After: {}", existingOrder, updatedOrder);
         }
-        try {
-            RegistryManager.ORDERS.unfreeze();
-            RegistryManager.ORDERS.addOrder(updatedOrder);
-        } finally {
-            RegistryManager.ORDERS.freeze();
+        try (var reg = RegistryManager.ORDERS){
+            reg.unfreeze();
+            reg.addOrder(updatedOrder);
         }
 
         logger.info("Order ID {} has been updated to status: {}", updatedOrder.orderId(), updatedOrder.status());
