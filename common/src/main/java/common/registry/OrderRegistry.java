@@ -25,22 +25,10 @@ public class OrderRegistry extends SimpleRegistry<Order> {
     }
 
     public Order addOrder(Order order) {
-        lock.lock();
+        if (isFrozen()) throw new IllegalStateException("Registry is frozen");
         try {
-            if (isFrozen()) throw new IllegalStateException("Registry is frozen");
+            lock.lock();
 
-            /*
-            클라이언트가 서버로부터 주문 정보를 받아 addOrder(order) 메소드를 호출할 때
-            이때, 데이터를 모두 받은 후 레지스트리가 'frozen(동결)' 상태라고 가정.
-            디버그 해보니 new IllegalStateException("Registry is frozen") 예외가 발생.
-            프로그램 실행 흐름은 즉시 lock.lock() 라인을 건너뛰고 finally 블록으로 점프.
-            finally 블록에서 lock.unlock()을 실행.
-            스레드는 lock.lock()을 호출한 적이 없으므로, 잠그지도 않은 락을 풀려고 시도.
-            결과적으로 IllegalMonitorStateException이 발생하면서 프로그램이 비정상 종료.
-            */
-
-            //기존에 같은 주문 ID를 가진 주문이 있는지 찾아 제거.
-            // List.removeIf를 사용하여 같은 orderId를 가진 기존 항목을 삭제.
             this.ITEMS.removeIf(existingOrder -> existingOrder.orderId() == order.orderId());
 
             //이제 리스트에는 해당 orderId가 없으므로, 안심하고 새 주문을 추가.
@@ -63,10 +51,9 @@ public class OrderRegistry extends SimpleRegistry<Order> {
     // addOrder 메소드와 동일한 이유로 수정.
     @Override
     public void addAll(List<SynchronizeData<?>> dataList) {
-        lock.lock();
+        if (this.isFrozen()) throw new IllegalStateException("Registry is frozen");
         try {
-            if (this.isFrozen()) throw new IllegalStateException("Registry is frozen");
-
+            lock.lock();
             dataList.forEach(data -> {
                 if (!(data instanceof Order order)) {
                     this.LOGGER.warn("Entry must be an instance of Order");
