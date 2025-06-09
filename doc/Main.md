@@ -122,4 +122,42 @@ public void foo() {
 > [!WARNING]
 > 각 Registry는 의존성을 가지고 있다. 예시로, OptionGroup 은 Option 의 id만을 전송받기 때문에, 클라이언트에 Option 이 존재하지 않는다면 문제가 발생할 수도 있다. 이를 유의하여 데이터를 동기화 하라.
 
+## 로컬 저장소(레지스트리) 접근
+
+```java
+// in RegistryManager.java
+public class RegistryManager {
+    private static final HashMap<String, Registry<?>> REGISTRY_MAP = new HashMap<>();
+    private static final List<Registry<?>> ENTRIES = new ArrayList<>();
+    public static Registry<?> getAsId(String id) {
+        return REGISTRY_MAP.get(id);
+    }
+
+    public static final Registry<Option> OPTIONS = new SimpleRegistry<>("options", Option.SYNC_CODEC, Option.class);
+    public static final Registry<OptionGroup> OPTION_GROUPS = new SimpleRegistry<>("option_groups", OptionGroup.SYNC_CODEC, OptionGroup.class);
+    public static final Registry<Menu> MENUS = new SimpleRegistry<>("menus", Menu.SYNC_CODEC, Menu.class);
+    public static final Registry<Category> CATEGORIES = new SimpleRegistry<>("categories", Category.SYNC_CODEC, Category.class);
+    public static final OrderRegistry ORDERS = new OrderRegistry();
+}
+```
+
+`RegistryManager`에는 저장되어야 하는 데이터들이 저장되어있는 `Registry` 의 인스턴스를 정의해둔 클래스이다.
+
+이를 통해 각 분야별 데이터를 쉽게 접근할 수 있다.
+
+### 예시 : 모든 등록된 메뉴 아이템 가져오기
+
+```java
+// 모두 가져오기
+    List<Menu> menuList = RegistryManager.MENUS.getAll();
+
+// 한 개의 데이터만 가져오기
+    Optional<Menu> menuOptional = RegistryManager.MENUS.getById("exampleId");
+    Menu menu = menuOptional.get(); // NPE 에 조심하라.
+
+// 모든 데이터 순환하기
+    RegistryManager.MENUS.forEach(menu -> {
+        // do Something...
+    });
+```
 
