@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class Main {
     public static final KioskNettyClient INSTANCE = new KioskNettyClient();
     private static final Logger LOGGER = KioskLoggerFactory.getLogger();
+    private static ClientOrderService clientOrderService;
     private static final ScheduledExecutorService REGISTRY_REFRESH_EXECUTOR = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder()
                     .setDaemon(true)
@@ -34,7 +35,7 @@ public class Main {
 
         ChannelEstablishedEvent.EVENT.register((handler -> mainThread.interrupt()));
 
-        new Thread(INSTANCE::run).start();
+        INSTANCE.run();
 
         synchronized (mainThread) {
             try {
@@ -48,20 +49,23 @@ public class Main {
 
         REGISTRY_REFRESH_EXECUTOR.scheduleAtFixedRate(INSTANCE::sendSyncPacket, 5,5, TimeUnit.MINUTES);
 
-        LOGGER.info("Waiting for CATEGORIES data to be populated...");
+        LOGGER.info("Waiting for Order data to be populated...");
         while (RegistryManager.CATEGORIES.size() == 0) {
             Thread.sleep(1000);
         }
 
         LOGGER.info("Data populated. Creating GUI...");
 
-        ClientOrderService clientOrderService = new ClientOrderService();
-        clientOrderService.setKioskClient(Main.INSTANCE);
+        clientOrderService = new ClientOrderService();
 
         SwingUtilities.invokeAndWait(() -> {
             OwnerMainUI ui = new OwnerMainUI(clientOrderService);
             ui.setVisible(true);
         });
+    }
+
+    public static ClientOrderService getClientOrderService() {
+        return clientOrderService;
     }
 
     static {
