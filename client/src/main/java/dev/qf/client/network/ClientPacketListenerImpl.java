@@ -1,5 +1,6 @@
 package dev.qf.client.network;
 
+import common.Menu;
 import common.Order;
 import common.network.SynchronizeData;
 import common.network.encryption.NetworkEncryptionUtils;
@@ -11,10 +12,15 @@ import common.registry.RegistryManager;
 import common.util.KioskLoggerFactory;
 import dev.qf.client.event.DataReceivedEvent;
 import org.slf4j.Logger;
+import common.Category;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.security.PublicKey;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 public class ClientPacketListenerImpl implements ClientPacketListener {
     private final SerializableHandler handler;
