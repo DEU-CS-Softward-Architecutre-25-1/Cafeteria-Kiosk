@@ -93,15 +93,16 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
     @Override
     public void onUpdateReceived(DataAddedC2SPacket packet) {
         Registry<?> registry = RegistryManager.getAsId(packet.registryId());
+        registry.unfreeze();
         registry.add(packet.data().getRegistryElementId(), packet.data());
-
+        registry.freeze();
         KioskNettyServer server = (KioskNettyServer) handler.connection;
-        server.getHandlers().forEach(handler ->
-                handler.send(new UpdateDataPacket.ResponseDataS2CPacket(
-                        registry.getRegistryId(),
-                        data
-                ))
-        );
+
+        server.broadCast(new UpdateDataPacket.ResponseDataS2CPacket(
+                registry.getRegistryId(),
+                (List<SynchronizeData<?>>) registry.getAll()
+        ));
+
     }
 
     @Override
@@ -112,9 +113,9 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
 
             logger.info("Processing deletion request - Registry: {}, ID: {}", registryId, dataId);
 
-            if ("menus".equals(registryId)) {
+            if (RegistryManager.MENUS.getRegistryId().equals(registryId)) {
                 handleMenuDeletion(dataId);
-            } else if ("categories".equals(registryId)) {
+            } else if (RegistryManager.CATEGORIES.getRegistryId().equals(registryId)) {
                 handleCategoryDeletion(dataId);
             } else {
                 logger.warn("Deletion not supported for registry: {}", registryId);
@@ -255,7 +256,12 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
                 updatedMenus
         );
 
-        RegistryManager.CATEGORIES.add(categoryId, updatedCategory);
+        try {
+            RegistryManager.CATEGORIES.unfreeze();
+            RegistryManager.CATEGORIES.add(categoryId, updatedCategory);
+        } finally {
+            RegistryManager.CATEGORIES.freeze();
+        }
         logger.info("Restored menu '{}' to category '{}'", menu.name(), category.cateName());
         return true;
     }
@@ -278,7 +284,13 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
         if (defaultCategoryOpt.isEmpty()) {
             // 미분류 카테고리 생성
             defaultCategory = new Category(defaultCategoryId, "미분류", new ArrayList<>());
-            RegistryManager.CATEGORIES.add(defaultCategoryId, defaultCategory);
+            try {
+                RegistryManager.CATEGORIES.unfreeze();
+                RegistryManager.CATEGORIES.add(defaultCategoryId, defaultCategory);
+            } finally {
+                RegistryManager.CATEGORIES.freeze();
+            }
+
             logger.info("Created default category: 미분류");
         } else {
             defaultCategory = defaultCategoryOpt.get();
@@ -294,12 +306,23 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
                 updatedMenus
         );
 
-        RegistryManager.CATEGORIES.add(defaultCategoryId, updatedCategory);
+        try {
+            RegistryManager.CATEGORIES.unfreeze();
+            RegistryManager.CATEGORIES.add(defaultCategoryId, updatedCategory);
+        } finally {
+            RegistryManager.CATEGORIES.freeze();
+        }
+
         logger.info("📁 Assigned orphan menu '{}' to default category '미분류'", menu.name());
     }
 
-    // 삭제 메서드
-
+    /**
+     * rewrited by @biryeongtrain.
+     * check at <a href="https://github.com/DEU-CS-Softward-Architecutre-25-1/Cafeteria-Kiosk/pull/24/commits/91d62557278169dc67518ca64b19baab4e427cd4">original code</a>
+     *
+     *
+     * @param menuId target menu
+     */
     private void handleMenuDeletion(String menuId) {
         try {
             Optional<Menu> menuToDelete = RegistryManager.MENUS.getById(menuId);
@@ -312,22 +335,27 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
             logger.info("Deleting menu: {} ({})", menu.name(), menuId);
 
             // Registry에서 메뉴 삭제
-            boolean menuRemoved = RegistryManager.MENUS.remove(menuId);
-            logger.info("Menu removed from registry: {}", menuRemoved);
+            try {
+                RegistryManager.MENUS.unfreeze();
+                boolean menuRemoved = RegistryManager.MENUS.remove(menuId);
+                logger.info("Menu removed from registry: {}", menuRemoved);
+            } finally {
+                RegistryManager.MENUS.freeze();
+            }
 
             // 모든 카테고리에서 해당 메뉴 제거
-            List<Category> updatedCategories = new ArrayList<>();
+            boolean isCategoryDirty = false;
             for (Category category : RegistryManager.CATEGORIES.getAll()) {
                 List<Menu> menuList = new ArrayList<>(category.menus());
                 if (menuList.removeIf(m -> m.id().equals(menuId))) {
-                    Category updatedCategory = new Category(
-                            category.cateId(),
-                            category.cateName(),
-                            menuList
-                    );
-                    RegistryManager.CATEGORIES.add(category.cateId(), updatedCategory);
-                    updatedCategories.add(updatedCategory);
                     logger.info("Menu '{}' removed from category '{}'", menu.name(), category.cateName());
+                    try {
+                        RegistryManager.CATEGORIES.unfreeze();
+                        RegistryManager.CATEGORIES.add(category.cateId(), new Category(category.cateId(), category.cateName(), menuList));
+                    } finally {
+                        RegistryManager.CATEGORIES.freeze();
+                    }
+                    isCategoryDirty = true;
                 }
             }
 
@@ -336,22 +364,17 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
 
             // 메뉴 레지스트리 전체 전송 (삭제된 메뉴 제외)
             List<SynchronizeData<?>> menuData = new ArrayList<>(RegistryManager.MENUS.getAll());
-            server.getHandlers().forEach(h ->
-                    h.send(new UpdateDataPacket.ResponseDataS2CPacket(
-                            RegistryManager.MENUS.getRegistryId(),
-                            menuData
-                    ))
-            );
+            server.broadCast(new UpdateDataPacket.ResponseDataS2CPacket(
+                    RegistryManager.MENUS.getRegistryId(),
+                    menuData));
 
             // 업데이트된 카테고리들만 전송
-            if (!updatedCategories.isEmpty()) {
+            if (isCategoryDirty) {
                 List<SynchronizeData<?>> categoryData = new ArrayList<>(RegistryManager.CATEGORIES.getAll());
-                server.getHandlers().forEach(h ->
-                        h.send(new UpdateDataPacket.ResponseDataS2CPacket(
-                                RegistryManager.CATEGORIES.getRegistryId(),
-                                categoryData
-                        ))
-                );
+                server.broadCast(new UpdateDataPacket.ResponseDataS2CPacket(
+                        RegistryManager.CATEGORIES.getRegistryId(),
+                        categoryData
+                ));
             }
 
             logger.info("Menu deletion completed: {}", menu.name());
@@ -373,16 +396,24 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
 
             Category category = categoryToDelete.get();
             logger.info("Deleting category: {} ({})", category.cateName(), categoryId);
-
-            // 카테고리에 속한 메뉴들 먼저 삭제
-            for (Menu menu : category.menus()) {
-                RegistryManager.MENUS.remove(menu.id());
-                logger.info("Deleted menu: {} from category deletion", menu.name());
+            try {
+                RegistryManager.MENUS.unfreeze();
+                // 카테고리에 속한 메뉴들 먼저 삭제
+                for (Menu menu : category.menus()) {
+                    RegistryManager.MENUS.remove(menu.id());
+                    logger.info("Deleted menu: {} from category deletion", menu.name());
+                }
+            } finally {
+                RegistryManager.MENUS.freeze();
             }
-
             // 카테고리 삭제
-            boolean categoryRemoved = RegistryManager.CATEGORIES.remove(categoryId);
-            logger.info("Category removed from registry: {}", categoryRemoved);
+            try {
+                RegistryManager.CATEGORIES.unfreeze();
+                boolean categoryRemoved = RegistryManager.CATEGORIES.remove(categoryId);
+                logger.info("Category removed from registry: {}", categoryRemoved);
+            } finally {
+                RegistryManager.CATEGORIES.freeze();
+            }
 
             // 클라이언트들에게 업데이트 전송
             KioskNettyServer server = (KioskNettyServer) handler.connection;
@@ -390,16 +421,15 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
             List<SynchronizeData<?>> menuData = new ArrayList<>(RegistryManager.MENUS.getAll());
             List<SynchronizeData<?>> categoryData = new ArrayList<>(RegistryManager.CATEGORIES.getAll());
 
-            server.getHandlers().forEach(h -> {
-                h.send(new UpdateDataPacket.ResponseDataS2CPacket(
-                        RegistryManager.MENUS.getRegistryId(),
-                        menuData
-                ));
-                h.send(new UpdateDataPacket.ResponseDataS2CPacket(
-                        RegistryManager.CATEGORIES.getRegistryId(),
-                        categoryData
-                ));
-            });
+            server.broadCast(new UpdateDataPacket.ResponseDataS2CPacket(
+                    RegistryManager.MENUS.getRegistryId(),
+                    menuData
+            ));
+            server.broadCast(new UpdateDataPacket.ResponseDataS2CPacket(
+                    RegistryManager.CATEGORIES.getRegistryId(),
+                    categoryData
+            ));
+
 
             logger.info("Category deletion completed: {}", category.cateName());
 
@@ -428,8 +458,12 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
             throw new IllegalStateException("Client is not encrypted");
         }
         Order order = packet.order();
-        RegistryManager.ORDERS.addOrder(order);
-
+        try {
+            RegistryManager.ORDERS.unfreeze();
+            RegistryManager.ORDERS.addOrder(order);
+        } finally {
+            RegistryManager.ORDERS.freeze();
+        }
         KioskNettyServer server = (KioskNettyServer) handler.connection;
         server.broadCast(new OrderUpdatedS2CPacket(order));
     }
