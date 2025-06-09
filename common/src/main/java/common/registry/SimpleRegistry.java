@@ -192,6 +192,9 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
     @Override
     public boolean remove(String id) {
         try {
+            if (this.isFrozen()) {
+                throw new IllegalStateException("Registry is already frozen");
+            }
             lock.lock();
             T item = idToEntry.get(id);
             if (item == null) {
