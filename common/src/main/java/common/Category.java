@@ -17,6 +17,8 @@ public record Category(String cateId, String cateName, List<Menu> menus) impleme
             ).apply(instance, Category::new)
     ));
 
+    public static final Category UNKNOWN = new Category("unknown", "Unknown", List.of());
+
     @Override
     public Codec<Category> getSyncCodec() {
         return SYNC_CODEC;
