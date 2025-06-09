@@ -1,7 +1,6 @@
 package dev.qf.client.network;
 
 import common.Order;
-import common.OrderService;
 import common.network.SynchronizeData;
 import common.network.encryption.NetworkEncryptionUtils;
 import common.network.handler.SerializableHandler;
@@ -9,10 +8,7 @@ import common.network.handler.listener.ClientPacketListener;
 import common.network.packet.*;
 import common.registry.Registry;
 import common.registry.RegistryManager;
-import common.util.Container;
 import common.util.KioskLoggerFactory;
-import dev.qf.client.ClientOrderService;
-import dev.qf.client.Main;
 import dev.qf.client.event.DataReceivedEvent;
 import org.slf4j.Logger;
 
@@ -46,7 +42,16 @@ public class ClientPacketListenerImpl implements ClientPacketListener {
         logger.info("Client public key sent");
         this.handler.send(secretPacket);
         this.handler.encrypt(encrpytionCipher, decryptionCipher);
-   }
+    }
+
+    /*
+    서버로부터 어떤 종류의 데이터(options, menus, orders 등)를 받든 상관없이
+    데이터를 업데이트한 후 finally 블록에서 무조건 해당 레지스트리를 동결시킴.
+    이 때문에 초기 데이터 동기화 과정에서 orders 데이터가 들어올 때 OrderRegistry
+    동결 처리. 그 이후에 사용자가 주문 상태를 변경하면, onOrderStatusChanged
+    메소드가 호출되어 이미 동결된 OrderRegistry에 데이터를 추가하려고 시도하면서
+    Registry is frozen 예외가 발생.
+    */
 
     @Override
     public void onReceivedData(UpdateDataPacket.ResponseDataS2CPacket packet) {
@@ -65,7 +70,11 @@ public class ClientPacketListenerImpl implements ClientPacketListener {
             registry.clear();
             registry.addAll(packet.data());
         } finally {
-            registry.freeze();
+            //OrderRegistry는 동적으로 변경되어야 하므로, 동결대상에서 제외.
+            if (registry != RegistryManager.ORDERS) {
+                registry.freeze();
+                logger.info("Registry '{}' has been frozen.", registry.getRegistryId());
+            }
         }
         DataReceivedEvent.EVENT.invoker().onRegistryChanged(this.handler, registry);
     }
@@ -82,13 +91,23 @@ public class ClientPacketListenerImpl implements ClientPacketListener {
         }
     }
 
+        /*
+        서버로부터 받은 최신 주문 정보(packet.order())를 사용하지 않고
+        로컬에 저장된 옛날 주문 정보를 다시 addOrder 메소드에 전달.
+        주문 상태가 업데이트되지 않고 이전 상태로 덮어쓰기되는 오류가 있음.
+         */
+
     @Override
     public void onOrderStatusChanged(OrderUpdatedS2CPacket packet) {
-        Order order = RegistryManager.ORDERS.get(packet.order().orderId());
-        if (order.cart().equals(packet.order().cart())) {
-            logger.warn("order is not looks same. will be override. before : {}", order);
+        Order updatedOrder = packet.order();
+        Order existingOrder = RegistryManager.ORDERS.get(updatedOrder.orderId());
+
+        if (existingOrder != null && !existingOrder.cart().equals(updatedOrder.cart())) {
+            logger.warn("Order data seems different. Overriding. Before: {}, After: {}", existingOrder, updatedOrder);
         }
-        RegistryManager.ORDERS.addOrder(order);
+
+        RegistryManager.ORDERS.addOrder(updatedOrder);
+        logger.info("Order ID {} has been updated to status: {}", updatedOrder.orderId(), updatedOrder.status());
     }
 
     @Override
