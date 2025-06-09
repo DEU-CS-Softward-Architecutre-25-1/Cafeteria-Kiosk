@@ -46,4 +46,14 @@ public class Cart {
                 .mapToInt(OrderItem::getTotalPrice)
                 .sum();
     }
+
+    public void increaseQuantity(OrderItem item) {
+        int itemIndex = this.items.indexOf(item);
+        OrderItem orderItem = new OrderItem(item.getMenuItem(), item.getSelectedOptions(), item.getQuantity() + 1);
+        this.items.set(itemIndex, orderItem);
+    }
+
+    public void clear() {
+        items.clear();
+    }
 }

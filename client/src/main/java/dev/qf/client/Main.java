@@ -84,7 +84,7 @@ public class Main {
 
         // UI 선택 대화상자
         SwingUtilities.invokeAndWait(() -> {
-            String[] options = {"카테고리 관리", "메뉴 관리", "종료"};
+            String[] options = {"메인 UI", "메뉴 관리", "종료"};
             int choice = JOptionPane.showOptionDialog(
                     null,
                     "어떤 관리 화면을 열까요?",
@@ -97,8 +97,8 @@ public class Main {
             );
 
             switch (choice) {
-                case 0: // 카테고리 관리
-                    new CategoryManagementUI().setVisible(true);
+                case 0: // 메인 UI
+                    new UserMainUI().setVisible(true);
                     break;
                 case 1: // 메뉴 관리
                     new MenuManagementUI().setVisible(true);
