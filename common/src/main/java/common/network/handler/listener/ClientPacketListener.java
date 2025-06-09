@@ -1,9 +1,7 @@
 package common.network.handler.listener;
 
-import common.network.packet.EncryptCompleteS2CPacket;
-import common.network.packet.HelloS2CPacket;
-import common.network.packet.UpdateDataPacket;
-import common.network.packet.VerifyPurchasePackets;
+import common.OrderStatus;
+import common.network.packet.*;
 
 /**
  * <code>Client</code>에서 핸들링되는 패킷들을 정의한 인터페이스이다. 해당 인터페이스의 실 구현부는 <code>client</code> 모듈에 있음을
@@ -14,4 +12,5 @@ public interface ClientPacketListener extends PacketListener {
     void onReceivedData(UpdateDataPacket.ResponseDataS2CPacket packet);
     void onEncryptCompleted(EncryptCompleteS2CPacket packet);
     void onVerifyPurchaseResult(VerifyPurchasePackets.VerifyPurchaseResultS2CPacket packet);
+    void onOrderStatusChanged(OrderUpdatedS2CPacket packet);
 }

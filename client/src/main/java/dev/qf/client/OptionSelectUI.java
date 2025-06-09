@@ -4,7 +4,6 @@ import common.Menu;
 import common.Option;
 import common.OptionGroup;
 import common.OrderItem;
-import common.registry.RegistryManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,7 +15,8 @@ public class OptionSelectUI extends JFrame {
     private final CartController cartController;
     private final OptionSelectionController optionController;
     private final UserMainUI parentUI;
-    private final Map<OptionGroup, Option> selectedOptions = new HashMap<>();
+    private final Map<OptionGroup, Option> selectedOptions = new HashMap<>(); // 타입 변경
+    private final List<OptionGroup> optionGroups;
 
     public OptionSelectUI(Menu menu, CartController cartController, OptionSelectionController optionController, UserMainUI parentUI) {
         this.selectedMenu = menu;
@@ -28,7 +28,7 @@ public class OptionSelectUI extends JFrame {
         setSize(300, 400);
         setLayout(new BorderLayout());
 
-        List<OptionGroup> optionGroups = RegistryManager.OPTION_GROUPS.getAll();
+        this.optionGroups = selectedMenu.optionGroup();
 
         JPanel optionPanel = new JPanel(new GridLayout(0, 1));
         for (OptionGroup group : optionGroups) {
@@ -36,6 +36,7 @@ public class OptionSelectUI extends JFrame {
             ButtonGroup btnGroup = new ButtonGroup();
             for (Option opt : group.options()) {
                 JRadioButton rb = new JRadioButton(opt.name() + " (₩" + opt.extraCost() + ")");
+                // OptionGroup 객체를 직접 키로 사용
                 rb.addActionListener(e -> selectedOptions.put(group, opt));
                 btnGroup.add(rb);
                 optionPanel.add(rb);
@@ -44,14 +45,15 @@ public class OptionSelectUI extends JFrame {
 
         JButton addButton = new JButton("장바구니에 추가");
         addButton.addActionListener(e -> {
-//            if (optionController.isValidOption(selectedOptions, optionGroups)) {
-//                OrderItem item = optionController.createOrderItem(selectedMenu, selectedOptions, 1);
-//                cartController.addItemToCart(item);
-//                parentUI.refreshCart();
-//                dispose();
-//            } else {
-//                JOptionPane.showMessageDialog(this, "필수 옵션을 선택하세요.");
-//            }
+            // 타입 일치: Map<OptionGroup,Option> → Map<OptionGroup,Option>
+            if (optionController.isValidOption(selectedOptions, optionGroups)) {
+                OrderItem item = optionController.createOrderItem(selectedMenu, selectedOptions, 1);
+                cartController.addItemToCart(item);
+                parentUI.refreshCart();
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "필수 옵션을 선택하세요.");
+            }
         });
 
         add(new JScrollPane(optionPanel), BorderLayout.CENTER);

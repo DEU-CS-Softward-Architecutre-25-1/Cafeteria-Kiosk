@@ -69,7 +69,23 @@ public final class KioskNettyClient implements Connection {
 
     @Override
     public ChannelFuture sendSerializable(String id, Serializable<?> serializable) {
-        return handler.send(serializable).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+
+        /*
+        클라이언트에서 특정 상황(예: 네트워크 연결 직후, 연결이 일시적으로 끊겼을 때)에서 데이터를 전송하려고 시도할 때
+        원인 불명의 NullPointerException이 발생하여 비정상적으로 종료되는 문제가 있었습니다.
+        
+        SerializableHandler의 send() 메소드는 네트워크 연결이 불안정할 경우, ChannelFuture 객체 대신 null을 반환하는데
+        기존에는 send() 메소드의 반환값이 null일 가능성을 전혀 확인하지 않고, 곧바로 .addListener() 메소드를 호출하여서
+        null에 대고 메소드를 호출하려고 시도했기 때문에 NullPointerException이 발생한 것 같아
+        handler.send()의 결과를 임시 변수(future)에 먼저 저장한 뒤
+        그 변수가 null이 아닌 경우에만 .addListener()를 호출하도록 코드를 임시 수정.
+         */
+
+        ChannelFuture future = handler.send(serializable);
+        if (future != null) {
+            future.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        }
+        return future;
     }
 
     public boolean isConnected() {

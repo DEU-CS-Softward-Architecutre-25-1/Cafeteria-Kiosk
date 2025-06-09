@@ -1,6 +1,7 @@
 package dev.qf.server.network;
 
 import com.google.common.primitives.Ints;
+import common.Order;
 import common.network.SynchronizeData;
 import common.network.encryption.NetworkEncryptionUtils;
 import common.network.packet.*;
@@ -103,6 +104,18 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
             throw new IllegalStateException("Client is not encrypted");
         }
         // TODO IMPLEMENT PACKET HANDLING
+    }
+
+    @Override
+    public void onOrderStatusChanged(OrderStatusChangedC2SPacket packet) {
+        if (!this.handler.isEncrypted()) {
+            throw new IllegalStateException("Client is not encrypted");
+        }
+        Order order = packet.order();
+        RegistryManager.ORDERS.addOrder(order);
+
+        KioskNettyServer server = (KioskNettyServer) handler.connection;
+        server.broadCast(new OrderUpdatedS2CPacket(order));
     }
 
     @Override
