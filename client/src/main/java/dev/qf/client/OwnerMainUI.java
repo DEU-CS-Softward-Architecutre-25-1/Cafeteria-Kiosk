@@ -20,13 +20,13 @@ public class OwnerMainUI extends JFrame {
     private JTable orderTable;
     private DefaultTableModel tableModel;
     private JButton refreshButton;
-    private OrderService orderService;
+    private final OrderService orderService;
 
     private static final DateTimeFormatter TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy년M월d일(E) HH:mm", Locale.KOREAN);
 
-    public OwnerMainUI(ClientOrderService clientOrderService) {
-        this.orderService = clientOrderService;
+    public OwnerMainUI() {
+        this.orderService = Main.getClientOrderService();
         initializeUI();
         loadOrderData();
 

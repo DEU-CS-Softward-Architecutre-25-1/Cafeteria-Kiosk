@@ -27,7 +27,7 @@ public class LoginController {
         else if (isUser) role = "USER"; // 사용자로 성공하였을 경우 role = USER
 
         // 로그인 성공시 문자열 반환
-        LoginEvent.EVENT.invoker().onLogin(id, role != null, role);
+        dev.qf.client.event.LoginEvent.EVENT.invoker().onLogin(id, role != null, role);
 
         return role;
     }
