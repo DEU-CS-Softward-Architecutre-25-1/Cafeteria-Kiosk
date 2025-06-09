@@ -307,7 +307,12 @@ public class MenuManagementUI extends JFrame {
         loadAndDisplayImage(menu.imagePath().toString());
     }
     private String getCategoryNameForMenu(Menu menu) {
-        return menu.id();
+        return RegistryManager.CATEGORIES.getAll()
+                .stream()
+                .filter(cate -> cate.menus().contains(menu))
+                .findFirst()
+                .orElse(Category.UNKNOWN)
+                .cateName();
     }
 
     private void loadAndDisplayImage(String imagePath) {
