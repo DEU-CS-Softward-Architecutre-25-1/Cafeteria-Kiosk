@@ -21,7 +21,7 @@ public class CartController {
     }
 
     public OrderItem findMatchingItem(OrderItem target) {
-        for (OrderItem item : cart.getItems().keySet()) {
+        for (OrderItem item : cart.getItems()) {
             // 메뉴가 같은지 확인
             boolean sameMenu = item.getMenuItem().equals(target.getMenuItem());
 

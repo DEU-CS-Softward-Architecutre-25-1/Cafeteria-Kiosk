@@ -48,7 +48,9 @@ public class Cart {
     }
 
     public void increaseQuantity(OrderItem item) {
-        items.merge(item, 1, Integer::sum);
+        int itemIndex = this.items.indexOf(item);
+        OrderItem orderItem = new OrderItem(item.getMenuItem(), item.getSelectedOptions(), item.getQuantity() + 1);
+        this.items.set(itemIndex, orderItem);
     }
 
     public void clear() {

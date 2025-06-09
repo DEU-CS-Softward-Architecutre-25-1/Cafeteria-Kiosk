@@ -21,34 +21,33 @@ public class UserMainUI extends JFrame {
     private final JPanel menuPanel = new JPanel(new GridLayout(0, 3, 10, 10));    private final List<common.Menu> allMenus;
 
     public UserMainUI() {
+        allMenus = RegistryManager.MENUS.getAll();
+
         setTitle("카페 키오스크");
         setSize(400, 600);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // 전체 메뉴 목록
-//        allMenus = List.of(
-//                new common.Menu("menu001", "아메리카노", 3000, "cate001", Path.of("/images/menu1.png"), "진한 에스프레소와 물", OptionGroup.loadOptionGroups("menu001")),
-//                new common.Menu("menu002", "카페라떼", 3500, "cate001", Path.of("/images/menu2.png"), "에스프레소 + 스팀밀크", OptionGroup.loadOptionGroups("menu002")),
-//                new common.Menu("menu003", "바닐라라떼", 4000, "cate001", Path.of("/images/menu3.png"), "바닐라향 가득한 라떼", OptionGroup.loadOptionGroups("menu003")),
-//                new common.Menu("menu004", "아이스티", 3000, "cate002", Path.of("/images/menu4.png"), "상큼한 아이스티", OptionGroup.loadOptionGroups("menu004")),
-//                new common.Menu("menu005", "허브티", 3200, "cate002", Path.of("/images/menu5.png"), "편안한 허브향", OptionGroup.loadOptionGroups("menu005"))
-//        );
-        allMenus = RegistryManager.MENUS.getAll();
-
         // === [상단] 카테고리 패널 ===
         JPanel categoryPanel = new JPanel(new FlowLayout());
-        JButton coffeeBtn = new JButton("커피");
-        JButton teaBtn = new JButton("티");
-        JButton allBtn = new JButton("전체");
+        // 누가 이거 하드코딩하래요?
+//        JButton coffeeBtn = new JButton("커피");
+//        JButton teaBtn = new JButton("티");
+//        JButton allBtn = new JButton("전체");
+//
+//        coffeeBtn.addActionListener(e -> displayMenusByCategory("cate001"));
+//        teaBtn.addActionListener(e -> displayMenusByCategory("cate002"));
+//        allBtn.addActionListener(e -> displayMenusByCategory(null));
+//
+//        categoryPanel.add(coffeeBtn);
+//        categoryPanel.add(teaBtn);
+//        categoryPanel.add(allBtn);
 
-        coffeeBtn.addActionListener(e -> displayMenusByCategory("cate001"));
-        teaBtn.addActionListener(e -> displayMenusByCategory("cate002"));
-        allBtn.addActionListener(e -> displayMenusByCategory(null));
-
-        categoryPanel.add(coffeeBtn);
-        categoryPanel.add(teaBtn);
-        categoryPanel.add(allBtn);
+        RegistryManager.CATEGORIES.getAll().forEach(category -> {
+            JButton button = new JButton(category.cateName());
+            button.addActionListener(e -> displayMenusByCategory(category.cateId()));
+            categoryPanel.add(button);
+        });
 
         add(categoryPanel, BorderLayout.NORTH);
 
@@ -71,7 +70,7 @@ public class UserMainUI extends JFrame {
         menuPanel.removeAll();
         List<Menu> filtered = (cateId == null)
                 ? allMenus
-                : RegistryManager.CATEGORIES.getById(cateId).get().menus();
+                : RegistryManager.CATEGORIES.getById(cateId).orElseThrow().menus();
 
         for (Menu menu : filtered) {
             JPanel menuItemPanel = new JPanel();
@@ -118,9 +117,9 @@ public class UserMainUI extends JFrame {
         JPanel itemPanel = new JPanel();
         itemPanel.setLayout(new BoxLayout(itemPanel, BoxLayout.Y_AXIS));
 
-        for (var entry : cart.getItems().entrySet()) {
-            OrderItem item = entry.getKey();
-            int quantity = entry.getValue();
+        for (var entry : cart.getItems()) {
+            OrderItem item = entry;
+            int quantity = entry.getQuantity();
 
             JLabel label = new JLabel(item.getOrderDescription() + " x" + quantity + " = ₩" + (item.getTotalPrice() * quantity));
 

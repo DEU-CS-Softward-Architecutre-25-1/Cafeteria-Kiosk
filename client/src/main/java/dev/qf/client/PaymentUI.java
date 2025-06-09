@@ -19,9 +19,9 @@ public class PaymentUI extends JFrame {
         itemPanel.setLayout(new BoxLayout(itemPanel, BoxLayout.Y_AXIS));
         JScrollPane scrollPane = new JScrollPane(itemPanel);
 
-        for (Map.Entry<OrderItem, Integer> entry : cart.getItems().entrySet()) {
-            OrderItem item = entry.getKey();
-            int qty = entry.getValue();
+        for (var entry : cart.getItems()) {
+            OrderItem item = entry;
+            int qty = entry.getQuantity();
             JLabel label = new JLabel(item.getOrderDescription() + " x" + qty + " = ₩" + (item.getTotalPrice() * qty));
             itemPanel.add(label);
         }
