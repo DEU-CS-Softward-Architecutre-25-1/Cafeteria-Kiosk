@@ -22,7 +22,6 @@ public interface Registry<T extends SynchronizeData<?>> extends IndexIterable<T>
     void addAll(List<SynchronizeData<?>> data);
     boolean remove(String id);
     boolean remove(T entry);
-
     @NotNull
     Codec<T> getCodec();
     List<T> getAll();
