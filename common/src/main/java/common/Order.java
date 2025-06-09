@@ -1,5 +1,9 @@
 package common;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import common.util.JavaCodecs;
+
 import java.time.LocalDateTime;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -18,23 +22,16 @@ public record Order(
         LocalDateTime orderTime,
         OrderStatus status,
         Cart cart
-) implements SynchronizeData<Order>, Serializable<Order> {
-
-    private static final Logger LOGGER = KioskLoggerFactory.getLogger();
-
-    public static final Order EMPTY = new Order(-1, "UNKNOWN", LocalDateTime.MIN, OrderStatus.UNKNOWN, Cart.EMPTY);
-
-    public final static Codec<Order> SYNC_CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                    Codec.INT.fieldOf("orderId").forGetter(Order::orderId),
+) implements SynchronizeData<Order> {
+    public static final Codec<Order> CODEC = Codec.lazyInitialized(() -> RecordCodecBuilder.create(instance -> instance.group(
+                    Codec.INT.fieldOf("order_id").forGetter(Order::orderId),
                     Codec.STRING.fieldOf("customer").forGetter(Order::customer),
-                    JavaCodecs.LOCAL_DATE_TIME.fieldOf("orderTime").forGetter(Order::orderTime),
-                    Codec.STRING.xmap(OrderStatus::valueOf, OrderStatus::name).fieldOf("status").forGetter(Order::status),
+                    JavaCodecs.LOCAL_DATE_TIME.fieldOf("order_time").forGetter(Order::orderTime),
+                    OrderStatus.CODEC.fieldOf("status").forGetter(Order::status),
                     Cart.CODEC.fieldOf("cart").forGetter(Order::cart)
-            ).apply(instance, (orderId, customer, orderTime, status, cart) -> {
-                LOGGER.info("DEBUG: Order Codec: Successfully decoded Order ID: {}, Customer: {}", orderId, customer);
-                return new Order(orderId, customer, orderTime, status, cart);
-            })
+            ).apply(instance, Order::new))
     );
+    public static final Order EMPTY = new Order(-1, "UNKNOWN", LocalDateTime.MIN, OrderStatus.UNKNOWN, Cart.EMPTY);
 
     public Order(int orderId, String customer, LocalDateTime orderTime, OrderStatus status) {
         this(orderId, customer, orderTime, status, new Cart());
@@ -46,37 +43,11 @@ public record Order(
 
     @Override
     public Codec<Order> getSyncCodec() {
-        return SYNC_CODEC;
+        return CODEC;
     }
 
     @Override
     public String getRegistryElementId() {
-        return "order:" + orderId();
-    }
-
-    @Override
-    public String getPacketId() {
-        return "order_data_element";
-    }
-
-
-
-    @Override
-    public Order getValue() {
-        return this;
-    }
-
-    @Override
-    public Codec<Order> getCodec() {
-        return SYNC_CODEC;
-    }
-
-    @Override
-    public JsonElement toJson() {
-        JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty(Serializable.PACKET_ID_PROPERTY, getPacketId());
-        JsonElement dataValue = getCodec().encodeStart(JsonOps.INSTANCE, getValue()).getOrThrow();
-        jsonObject.add(Serializable.DATA_PROPERTY, dataValue);
-        return jsonObject;
+        return String.valueOf(this.orderId);
     }
 }
