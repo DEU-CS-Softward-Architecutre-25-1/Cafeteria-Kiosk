@@ -121,4 +121,8 @@ public final class KioskNettyServer implements Connection {
     public List<SerializableHandler> getHandlers() {
         return ImmutableList.copyOf(this.connections);
     }
+
+    public void broadCast(Serializable<?> serializable) {
+        this.connections.forEach(handler -> handler.send(serializable));
+    }
 }
