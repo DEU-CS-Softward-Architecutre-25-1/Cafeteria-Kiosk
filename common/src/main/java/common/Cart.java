@@ -13,9 +13,9 @@ JSON 직렬화와 호환되지 않아 에러가 발생하여 수정
  */
 
 public class Cart {
-    public static Codec<Cart> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+    public static Codec<Cart> CODEC = Codec.lazyInitialized(() -> RecordCodecBuilder.create(instance -> instance.group(
             OrderItem.CODEC.listOf().fieldOf("items").forGetter(Cart::getItems)
-    ).apply(instance, Cart::new));
+    ).apply(instance, Cart::new)));
 
     public static final Cart EMPTY = new Cart() {
         @Override
