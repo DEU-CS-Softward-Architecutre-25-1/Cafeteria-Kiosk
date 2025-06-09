@@ -2,7 +2,8 @@ package common.registry;
 
 import common.Order;
 import common.network.SynchronizeData;
-
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class OrderRegistry extends SimpleRegistry<Order> {
@@ -24,41 +25,48 @@ public class OrderRegistry extends SimpleRegistry<Order> {
     }
 
     public Order addOrder(Order order) {
+        if (isFrozen()) throw new IllegalStateException("Registry is frozen");
         try {
-            if (isFrozen()) throw new IllegalStateException("Registry is frozen");
             lock.lock();
+
+            this.ITEMS.removeIf(existingOrder -> existingOrder.orderId() == order.orderId());
+
+            //이제 리스트에는 해당 orderId가 없으므로, 안심하고 새 주문을 추가.
+            //항상 주문 ID당 하나의 최신 상태만 유지.
+            this.ITEMS.add(order);
+
+            // 나머지 Map 데이터들은 key-value 형태이므로 자동으로 덮어쓰기.
             String wrappedId = String.valueOf(order.orderId());
             this.rawIndexToEntry.put(order.orderId(), order);
             this.idToEntry.put(wrappedId, order);
             this.entryToId.put(order, wrappedId);
-            this.ITEMS.add(order);
             this.entryToRawIndex.put(order, order.orderId());
+
             return order;
         } finally {
             lock.unlock();
         }
     }
 
-
+    // addOrder 메소드와 동일한 이유로 수정.
     @Override
     public void addAll(List<SynchronizeData<?>> dataList) {
+        if (this.isFrozen()) throw new IllegalStateException("Registry is frozen");
         try {
-            if (this.isFrozen()) throw new IllegalStateException("Registry is frozen");
             lock.lock();
-
             dataList.forEach(data -> {
                 if (!(data instanceof Order order)) {
                     this.LOGGER.warn("Entry must be an instance of Order");
                     return;
                 }
-                if (this.rawIndexToEntry.containsKey(order.orderId())) {
-                    this.LOGGER.info("Order with id {} already exists. overriding {}", order.orderId(), this.rawIndexToEntry.get(order.orderId()));
-                }
+
+                // addOrder와 동일하게 중복을 방지하기 위해 기존 항목을 먼저 제거.
+                this.ITEMS.removeIf(existingOrder -> existingOrder.orderId() == order.orderId());
+                this.ITEMS.add(order);
 
                 this.rawIndexToEntry.put(order.orderId(), order);
                 this.idToEntry.put(String.valueOf(order.orderId()), order);
                 this.entryToId.put(order, String.valueOf(order.orderId()));
-                this.ITEMS.add(order);
                 this.entryToRawIndex.put(order, order.orderId());
             });
 
@@ -67,4 +75,11 @@ public class OrderRegistry extends SimpleRegistry<Order> {
         }
     }
 
+   // 주문목록 내림차순
+    @Override
+    public List<Order> getAll() {
+        List<Order> orderList = new ArrayList<>(this.ITEMS);
+        orderList.sort(Comparator.comparingInt(Order::orderId).reversed());
+        return orderList;
+    }
 }

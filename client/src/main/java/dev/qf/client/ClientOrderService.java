@@ -6,8 +6,6 @@ import common.network.packet.UpdateDataPacket;
 import dev.qf.client.network.KioskNettyClient;
 import common.util.KioskLoggerFactory;
 import common.registry.RegistryManager;
-import common.registry.Registry;
-
 import common.network.Connection;
 import common.util.Container;
 
@@ -37,10 +35,6 @@ public class ClientOrderService implements OrderService {
         }
     }
 
-    /*
-    getOrderList()는 이제 데이터를 요청하지 않고, 현재 가지고 있는 데이터를 반환하는 역할만 되게 수정.
-    requestOrderListUpdate() 메소드가 새로 추가되어 '새로고침' 요청을 담당.
-     */
     public void requestOrderListUpdate() {
         if (kioskClient != null && kioskClient.isConnected()) {
             UpdateDataPacket.RequestDataC2SPacket requestOrdersPacket = new UpdateDataPacket.RequestDataC2SPacket(RegistryManager.ORDERS.getRegistryId());
@@ -93,7 +87,22 @@ public class ClientOrderService implements OrderService {
 
     private void sendOrderStatusUpdated(int orderId, OrderStatus status) {
         if (kioskClient != null && kioskClient.isConnected()) {
-            OrderStatusChangedC2SPacket packet = new OrderStatusChangedC2SPacket(getOrderById(orderId).orElseThrow());
+            Optional<Order> oldOrderOpt = getOrderById(orderId);
+            if (oldOrderOpt.isEmpty()) {
+                LOGGER.error("ID가 {}인 주문을 찾을 수 없어 상태를 변경할 수 없습니다.", orderId);
+                return;
+            }
+            Order oldOrder = oldOrderOpt.get();
+
+            Order updatedOrder = new Order(
+                    oldOrder.orderId(),
+                    oldOrder.customer(),
+                    oldOrder.orderTime(),
+                    status,
+                    oldOrder.cart()
+            );
+
+            OrderStatusChangedC2SPacket packet = new OrderStatusChangedC2SPacket(updatedOrder);
 
             ChannelFuture future = kioskClient.sendSerializable(packet.getPacketId(), packet);
             if (future != null) {
@@ -110,11 +119,5 @@ public class ClientOrderService implements OrderService {
         } else {
             LOGGER.error("KioskNettyClient가 연결되지 않았습니다. 주문 상태 변경 요청을 보낼 수 없습니다.");
         }
-    }
-
-    private void updateLocalOrderStatus(int orderId, OrderStatus newStatus) {
-        Order order = getOrderById(orderId).orElseThrow();
-        order.withStatus(newStatus);
-        refreshOwnerMainUIOrders();
     }
 }
