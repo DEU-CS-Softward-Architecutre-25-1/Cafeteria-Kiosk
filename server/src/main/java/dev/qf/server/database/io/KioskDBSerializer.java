@@ -151,7 +151,7 @@ public class KioskDBSerializer {
 
         //Order를 위한 직렬화/역직렬화 로직 추가
         registerSerializer(Order.class, (container, order) -> {
-            container.put(JavaTypes.INT, "orderId", order.orderId());
+            container.put(JavaTypes.INT, "id", order.orderId());
             container.put(JavaTypes.STRING, "customer", order.customer());
             container.put(JavaTypes.STRING, "orderTime", order.orderTime().toString());
             container.put(JavaTypes.STRING, "status", order.status().name());
@@ -161,7 +161,7 @@ public class KioskDBSerializer {
 
         registerDeserializer(Order.class, dc -> {
             DataContainer container = (DataContainer) dc;
-            int orderId = container.get(JavaTypes.INT, "orderId").orElseThrow();
+            int orderId = container.get(JavaTypes.INT, "id").orElseThrow();
             String customer = container.get(JavaTypes.STRING, "customer").orElseThrow();
             LocalDateTime orderTime = LocalDateTime.parse(container.get(JavaTypes.STRING, "orderTime").orElseThrow());
             OrderStatus status = OrderStatus.valueOf(container.get(JavaTypes.STRING, "status").orElseThrow());
