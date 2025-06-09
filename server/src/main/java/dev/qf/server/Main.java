@@ -47,7 +47,7 @@ public class Main {
         manager.initialize();
         if (debug) {
             manager.saveAll();
-//            manager.loadAll();
+            manager.loadAll();
         } else {
             manager.loadAll();
         }

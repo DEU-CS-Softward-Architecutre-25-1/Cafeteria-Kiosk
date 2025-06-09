@@ -73,6 +73,14 @@ public class UserMainUI extends JFrame {
                 : RegistryManager.CATEGORIES.getById(cateId).orElseThrow().menus();
 
         for (Menu menu : filtered) {
+            System.out.println("--- Debugging Menu ---");
+            System.out.println("Menu ID: " + menu.id());
+            System.out.println("Menu Name: " + menu.name());
+            System.out.println("Menu Price: " + menu.price());
+            System.out.println("Menu Image Path: " + menu.imagePath());
+            System.out.println("Menu Sold Out: " + menu.soldOut()); // 품절 여부도 확인
+            System.out.println("--------------------");
+
             JPanel menuItemPanel = new JPanel();
             menuItemPanel.setLayout(new BoxLayout(menuItemPanel, BoxLayout.Y_AXIS));
             menuItemPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -80,16 +88,30 @@ public class UserMainUI extends JFrame {
             JLabel imgLabel = new JLabel();
             // 이미지 로딩 및 크기 조절
             try {
-                ImageIcon icon = new ImageIcon(menu.imagePath().toUri().toURL());
-                Image image = icon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
-                imgLabel = new JLabel(new ImageIcon(image));
+                String imagePathString = menu.imagePath().toString().replace("\\", "/");
+                java.net.URL imageUrl = getClass().getClassLoader().getResource(imagePathString);
+                if (imageUrl != null) {
+                    // 이미지 URL을 찾았으면 ImageIcon을 생성하고 크기를 조절합니다.
+                    ImageIcon icon = new ImageIcon(imageUrl);
+                    Image image = icon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+                    imgLabel = new JLabel(new ImageIcon(image));
+                    // 로드 성공 로그 추가
+                    System.out.println("이미지가 성공적으로 로드되었습니다. 메뉴: " + menu.name() + " (ID: " + menu.id() + "), 경로: " + imagePathString);
+                } else {
+                    // 이미지를 찾지 못했을 때: 에러 로그 출력 및 대체 이미지/텍스트 표시
+                    System.err.println("이미지를 찾을 수 없습니다. 메뉴: " + menu.name() + " (ID: " + menu.id() + "), 검색 경로: " + imagePathString);
+                    imgLabel = new JLabel("이미지 없음"); // 대체 텍스트
+                    imgLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                    imgLabel.setPreferredSize(new Dimension(100, 100));
+                    imgLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 2)); // 테두리 추가
+                }
                 imgLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
                 imgLabel.addMouseListener(new java.awt.event.MouseAdapter() {
                     public void mouseClicked(java.awt.event.MouseEvent evt) {
                         new OptionSelectUI(menu, cartController, optionController, UserMainUI.this);
                     }
                 });
-            } catch (MalformedURLException e) {
+            } catch (Exception e) {
                 e.printStackTrace();  // 또는 사용자에게 기본 이미지로 대체하거나 에러 표시
             }
 

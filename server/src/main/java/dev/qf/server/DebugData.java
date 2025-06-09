@@ -39,11 +39,11 @@ public class DebugData {
         OptionGroup shotGroup = new OptionGroup("group_shot", "샷", false, List.of(shot1));
         OptionGroup syrupGroup = new OptionGroup("group_syrup", "시럽", false, List.of(syrupVanilla));
 
-        Menu americano = new Menu("menu_americano", "아메리카노", 4000, Path.of("images/americano.jpg"), "고소한 원두의 풍미", List.of(tempGroup, shotGroup));
-        Menu latte = new Menu("menu_latte", "카페 라떼", 4500, Path.of("images/latte.jpg"), "부드러운 우유의 조화", List.of(tempGroup, shotGroup, syrupGroup));
+        Menu americano = new Menu("menu_americano", "아메리카노", 4000, Path.of("images/menu1.png"), "고소한 원두의 풍미", List.of(tempGroup, shotGroup));
+        Menu latte = new Menu("menu_latte", "카페 라떼", 4500, Path.of("images/menu2.png"), "부드러운 우유의 조화", List.of(tempGroup, shotGroup, syrupGroup));
 
-        Menu dessertMenu1 = new Menu("dessertMenu1", "치즈케이크", 6000, Path.of(""), "달콤한 치즈케이크", List.of(testOptionGroup), false);
-        Menu dessertMenu2 = new Menu("dessertMenu2", "티라미수", 6500, Path.of(""), "이탈리아 디저트", List.of(testOptionGroup), false);
+        Menu dessertMenu1 = new Menu("dessertMenu1", "치즈케이크", 6000, Path.of("images/menu3.png"), "달콤한 치즈케이크", List.of(testOptionGroup), false);
+        Menu dessertMenu2 = new Menu("dessertMenu2", "티라미수", 6500, Path.of("images/menu4.png"), "이탈리아 디저트", List.of(testOptionGroup), false);
         Category coffeeCategory = new Category("cate_coffee", "커피", List.of(americano, latte));
 
         // 카테고리별로 다른 메뉴들 배치

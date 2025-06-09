@@ -2,10 +2,19 @@ package dev.qf.client;
 
 import common.OrderItem;
 import common.Cart;
-
+import common.Order;
+import common.network.packet.OrderStatusChangedC2SPacket;
+import common.util.Container;
+import dev.qf.client.network.KioskNettyClient;
 import javax.swing.*;
 import java.awt.*;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.Random;
+
+import common.Menu;
+import common.Option;
+import common.OptionGroup;
+import common.OrderStatus;
 
 public class PaymentUI extends JFrame {
 
@@ -19,10 +28,9 @@ public class PaymentUI extends JFrame {
         itemPanel.setLayout(new BoxLayout(itemPanel, BoxLayout.Y_AXIS));
         JScrollPane scrollPane = new JScrollPane(itemPanel);
 
-        for (var entry : cart.getItems()) {
-            OrderItem item = entry;
-            int qty = entry.getQuantity();
-            JLabel label = new JLabel(item.getOrderDescription() + " x" + qty + " = ₩" + (item.getTotalPrice() * qty));
+        for (OrderItem item : cart.getItems()) {
+            // item.getQuantity() 사용
+            JLabel label = new JLabel(item.getOrderDescription() + " x" + item.getQuantity() + " = ₩" + (item.getTotalPrice() * item.getQuantity()));
             itemPanel.add(label);
         }
 
@@ -38,6 +46,32 @@ public class PaymentUI extends JFrame {
         payButton.setFont(new Font("Dialog", Font.BOLD, 14));
         payButton.addActionListener(e -> {
             JOptionPane.showMessageDialog(this, "결제가 완료되었습니다.");
+
+            // 임시 주문 정보 생성
+            Random random = new Random();
+            int orderId = random.nextInt(1000000); // 임시 주문 ID 생성
+            String customerName = "익명"; // 임시 고객명 설정
+
+            Order newOrder = new Order(
+                    orderId,
+                    customerName,
+                    LocalDateTime.now(), // 현재 시간
+                    common.OrderStatus.PENDING, // 초기 주문 상태
+                    cart // 현재 장바구니 객체
+            );
+
+            // 생성된 Order 객체를 서버로 전송 시작
+            KioskNettyClient client = (KioskNettyClient) Container.get(common.network.Connection.class);
+            if (client != null && client.isConnected()) {
+                client.sendSerializable(new OrderStatusChangedC2SPacket(newOrder));
+                System.out.println("주문 정보(ID: " + newOrder.orderId() + ") 서버로 전송 요청 완료.");
+            } else {
+                System.err.println("서버 연결 실패: 주문 정보를 전송할 수 없습니다.");
+                JOptionPane.showMessageDialog(this,
+                        "서버 연결 실패: 주문 정보를 전송할 수 없습니다.",
+                        "오류", JOptionPane.ERROR_MESSAGE);
+            }
+
             cart.clear();
             parentUI.dispose(); // 기존 창 닫기
             new UserMainUI();   // 새 창 열기
