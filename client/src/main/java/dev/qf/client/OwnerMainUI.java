@@ -19,11 +19,11 @@ import java.util.Locale;
 public class OwnerMainUI extends JFrame {
     private JTable orderTable;
     private DefaultTableModel tableModel;
-    private JButton refreshButton;
     private final OrderService orderService;
 
+
     private static final DateTimeFormatter TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy년M월d일(E) HH:mm", Locale.KOREAN);
+            DateTimeFormatter.ofPattern("yyyy년M월d일(E) h시m분", Locale.KOREAN);
 
     public OwnerMainUI() {
         this.orderService = Main.getClientOrderService();
@@ -56,17 +56,40 @@ public class OwnerMainUI extends JFrame {
 
         tableHeader.setReorderingAllowed(false);
 
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        orderTable.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
+        orderTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+        orderTable.getColumnModel().getColumn(1).setPreferredWidth(300);
         orderTable.getColumnModel().getColumn(2).setCellRenderer(new StatusCellRenderer());
 
-        JPanel buttonPanel = new JPanel();
-        refreshButton = new JButton("주문 새로고침");
-        refreshButton.setFont(new Font("맑은 고딕", Font.BOLD, 18));
+        JPanel centerPanel = new JPanel(new BorderLayout());
+
+        JPanel refreshPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton refreshButton = new JButton("주문 새로고침");
+        refreshButton.setFont(new Font("맑은 고딕", Font.BOLD, 16));
         refreshButton.addActionListener(this::handleRefresh);
-        buttonPanel.add(refreshButton);
+        refreshPanel.add(refreshButton);
+
+        centerPanel.add(refreshPanel, BorderLayout.NORTH);
+        centerPanel.add(new JScrollPane(orderTable), BorderLayout.CENTER);
+
+        JPanel navigationButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        JButton categoryButton = new JButton("카테고리 관리");
+        JButton menuButton = new JButton("메뉴 관리");
+        JButton exitButton = new JButton("종료");
+
+        categoryButton.addActionListener(e -> showCategoryManagement());
+        menuButton.addActionListener(e -> showMenuManagement());
+        exitButton.addActionListener(e -> System.exit(0));
+
+        navigationButtonPanel.add(categoryButton);
+        navigationButtonPanel.add(menuButton);
+        navigationButtonPanel.add(exitButton);
 
         setLayout(new BorderLayout());
-        add(new JScrollPane(orderTable), BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
+        add(centerPanel, BorderLayout.CENTER);
+        add(navigationButtonPanel, BorderLayout.SOUTH);
 
         orderTable.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
@@ -79,6 +102,16 @@ public class OwnerMainUI extends JFrame {
                 }
             }
         });
+    }
+
+    private void showCategoryManagement() {
+        this.dispose();
+        new CategoryManagementUI().setVisible(true);
+    }
+
+    private void showMenuManagement() {
+        this.dispose();
+        new MenuManagementUI().setVisible(true);
     }
 
     public void loadOrderData() {
@@ -108,10 +141,7 @@ public class OwnerMainUI extends JFrame {
             default -> "알수없음";
         };
     }
-    /*
-    하나의 데이터 목록을 한쪽(네트워크 스레드)에서는 수정하고, 다른 한쪽(UI 스레드)에서는 읽으려고 동시에 달려들 때 오류
-    발생하여 OwnerMainUI.java에서 테이블을 업데이트할 때, 원본 데이터 리스트의 사본을 만들어 전송하는것으로 수정
-     */
+
     private void updateOrderTable(List<Order> orders) {
         tableModel.setRowCount(0);
         if (orders != null) {
@@ -126,7 +156,6 @@ public class OwnerMainUI extends JFrame {
         }
     }
 
-    //'주문 새로고침' 버튼의 동작을 loadOrderData() 호출에서 requestOrderListUpdate() 호출로 변경.
     private void handleRefresh(ActionEvent e) {
         ((ClientOrderService) orderService).requestOrderListUpdate();
     }
@@ -139,6 +168,9 @@ public class OwnerMainUI extends JFrame {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            setHorizontalAlignment(SwingConstants.CENTER);
+
             if (value != null) {
                 String status = value.toString();
                 if ("수락됨".equals(status)) {

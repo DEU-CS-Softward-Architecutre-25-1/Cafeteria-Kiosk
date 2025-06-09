@@ -115,6 +115,7 @@ public class ClientPacketListenerImpl implements ClientPacketListener {
         }
 
         logger.info("Order ID {} has been updated to status: {}", updatedOrder.orderId(), updatedOrder.status());
+        DataReceivedEvent.EVENT.invoker().onRegistryChanged(this.handler, RegistryManager.ORDERS);
     }
 
     @Override

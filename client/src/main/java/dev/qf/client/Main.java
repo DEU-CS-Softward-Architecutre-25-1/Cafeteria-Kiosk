@@ -1,7 +1,6 @@
 package dev.qf.client;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import common.event.ChannelEstablishedEvent;
 import common.network.packet.HandShakeC2SInfo;
 import common.registry.RegistryManager;
 import common.util.KioskLoggerFactory;
@@ -55,6 +54,7 @@ public class Main {
 
         System.out.println("서버에 연결됨. HandShake 전송...");
         INSTANCE.sendSerializable(new HandShakeC2SInfo("test"));
+        clientOrderService = new ClientOrderService();
 
         REGISTRY_REFRESH_EXECUTOR.scheduleAtFixedRate(INSTANCE::sendSyncPacket, 5,5, TimeUnit.MINUTES);
 
@@ -84,12 +84,13 @@ public class Main {
 
         // UI 선택 대화상자
         SwingUtilities.invokeAndWait(() -> {
-            String[] options = {"카테고리 관리", "메뉴 관리", "종료"};
+            // "주문 관리"를 추가.
+            String[] options = {"주문 관리", "카테고리 관리", "메뉴 관리", "종료"};
             int choice = JOptionPane.showOptionDialog(
                     null,
                     "어떤 관리 화면을 열까요?",
                     "관리 시스템 선택",
-                    JOptionPane.YES_NO_CANCEL_OPTION,
+                    JOptionPane.DEFAULT_OPTION, // 옵션 개수가 변경되어 수정
                     JOptionPane.QUESTION_MESSAGE,
                     null,
                     options,
@@ -97,13 +98,18 @@ public class Main {
             );
 
             switch (choice) {
-                case 0: // 카테고리 관리
+                case 0: // 주문 관리
+                    OwnerMainUI ownerMainUI = new OwnerMainUI();
+                    clientOrderService.setOwnerMainUI(ownerMainUI);
+                    ownerMainUI.setVisible(true);
+                    break;
+                case 1: // 카테고리 관리
                     new CategoryManagementUI().setVisible(true);
                     break;
-                case 1: // 메뉴 관리
+                case 2: // 메뉴 관리
                     new MenuManagementUI().setVisible(true);
                     break;
-                case 2: // 종료
+                case 3: // 종료
                 default:
                     System.exit(0);
                     break;
