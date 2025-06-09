@@ -1,5 +1,7 @@
 package dev.qf.client.network;
 
+import common.Order;
+import common.OrderService;
 import common.network.SynchronizeData;
 import common.network.encryption.NetworkEncryptionUtils;
 import common.network.handler.SerializableHandler;
@@ -7,7 +9,10 @@ import common.network.handler.listener.ClientPacketListener;
 import common.network.packet.*;
 import common.registry.Registry;
 import common.registry.RegistryManager;
+import common.util.Container;
 import common.util.KioskLoggerFactory;
+import dev.qf.client.ClientOrderService;
+import dev.qf.client.Main;
 import dev.qf.client.event.DataReceivedEvent;
 import org.slf4j.Logger;
 
@@ -75,6 +80,15 @@ public class ClientPacketListenerImpl implements ClientPacketListener {
         if (!this.handler.isEncrypted()) {
             throw new IllegalStateException("Client is not encrypted");
         }
+    }
+
+    @Override
+    public void onOrderStatusChanged(OrderUpdatedS2CPacket packet) {
+        Order order = RegistryManager.ORDERS.get(packet.order().orderId());
+        if (order.cart().equals(packet.order().cart())) {
+            logger.warn("order is not looks same. will be override. before : {}", order);
+        }
+        RegistryManager.ORDERS.addOrder(order);
     }
 
     @Override
