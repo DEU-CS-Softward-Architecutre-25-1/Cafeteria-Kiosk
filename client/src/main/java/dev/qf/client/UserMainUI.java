@@ -4,9 +4,12 @@ import common.Cart;
 import common.Menu;
 import common.OrderItem;
 import common.registry.RegistryManager;
+import common.registry.RegistryManager;
 
 import javax.swing.*;
 import java.awt.*;
+import java.net.MalformedURLException;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 
@@ -18,34 +21,33 @@ public class UserMainUI extends JFrame {
     private final JPanel menuPanel = new JPanel(new GridLayout(0, 3, 10, 10));    private final List<common.Menu> allMenus;
 
     public UserMainUI() {
+        allMenus = RegistryManager.MENUS.getAll();
+
         setTitle("카페 키오스크");
         setSize(400, 600);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // 전체 메뉴 목록
-//        allMenus = List.of(
-//                new common.Menu("menu001", "아메리카노", 3000, "cate001", Path.of("/images/menu1.png"), "진한 에스프레소와 물", OptionGroup.loadOptionGroups("menu001")),
-//                new common.Menu("menu002", "카페라떼", 3500, "cate001", Path.of("/images/menu2.png"), "에스프레소 + 스팀밀크", OptionGroup.loadOptionGroups("menu002")),
-//                new common.Menu("menu003", "바닐라라떼", 4000, "cate001", Path.of("/images/menu3.png"), "바닐라향 가득한 라떼", OptionGroup.loadOptionGroups("menu003")),
-//                new common.Menu("menu004", "아이스티", 3000, "cate002", Path.of("/images/menu4.png"), "상큼한 아이스티", OptionGroup.loadOptionGroups("menu004")),
-//                new common.Menu("menu005", "허브티", 3200, "cate002", Path.of("/images/menu5.png"), "편안한 허브향", OptionGroup.loadOptionGroups("menu005"))
-//        );
-        allMenus = List.of();
-
         // === [상단] 카테고리 패널 ===
         JPanel categoryPanel = new JPanel(new FlowLayout());
-        JButton coffeeBtn = new JButton("커피");
-        JButton teaBtn = new JButton("티");
-        JButton allBtn = new JButton("전체");
+        // 누가 이거 하드코딩하래요?
+//        JButton coffeeBtn = new JButton("커피");
+//        JButton teaBtn = new JButton("티");
+//        JButton allBtn = new JButton("전체");
+//
+//        coffeeBtn.addActionListener(e -> displayMenusByCategory("cate001"));
+//        teaBtn.addActionListener(e -> displayMenusByCategory("cate002"));
+//        allBtn.addActionListener(e -> displayMenusByCategory(null));
+//
+//        categoryPanel.add(coffeeBtn);
+//        categoryPanel.add(teaBtn);
+//        categoryPanel.add(allBtn);
 
-        coffeeBtn.addActionListener(e -> displayMenusByCategory("cate001"));
-        teaBtn.addActionListener(e -> displayMenusByCategory("cate002"));
-        allBtn.addActionListener(e -> displayMenusByCategory(null));
-
-        categoryPanel.add(coffeeBtn);
-        categoryPanel.add(teaBtn);
-        categoryPanel.add(allBtn);
+        RegistryManager.CATEGORIES.getAll().forEach(category -> {
+            JButton button = new JButton(category.cateName());
+            button.addActionListener(e -> displayMenusByCategory(category.cateId()));
+            categoryPanel.add(button);
+        });
 
         add(categoryPanel, BorderLayout.NORTH);
 
@@ -68,31 +70,34 @@ public class UserMainUI extends JFrame {
         menuPanel.removeAll();
         List<Menu> filtered = (cateId == null)
                 ? allMenus
-                : RegistryManager.CATEGORIES.getById(cateId).get().menus();
+                : RegistryManager.CATEGORIES.getById(cateId).orElseThrow().menus();
 
         for (Menu menu : filtered) {
             JPanel menuItemPanel = new JPanel();
             menuItemPanel.setLayout(new BoxLayout(menuItemPanel, BoxLayout.Y_AXIS));
             menuItemPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
+            JLabel imgLabel = new JLabel();
             // 이미지 로딩 및 크기 조절
-            ImageIcon icon = new ImageIcon(Objects.requireNonNull(getClass().getResource(menu.imagePath().toString())));
-            Image image = icon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
-            JLabel imgLabel = new JLabel(new ImageIcon(image));
-            imgLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            try {
+                ImageIcon icon = new ImageIcon(menu.imagePath().toUri().toURL());
+                Image image = icon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+                imgLabel = new JLabel(new ImageIcon(image));
+                imgLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                imgLabel.addMouseListener(new java.awt.event.MouseAdapter() {
+                    public void mouseClicked(java.awt.event.MouseEvent evt) {
+                        new OptionSelectUI(menu, cartController, optionController, UserMainUI.this);
+                    }
+                });
+            } catch (MalformedURLException e) {
+                e.printStackTrace();  // 또는 사용자에게 기본 이미지로 대체하거나 에러 표시
+            }
 
             // 메뉴명과 가격
             JLabel nameLabel = new JLabel(menu.name(), SwingConstants.CENTER);
             nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
             JLabel priceLabel = new JLabel("₩" + menu.price(), SwingConstants.CENTER);
             priceLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-            // 클릭 시 옵션 선택 UI 열기
-            menuItemPanel.addMouseListener(new java.awt.event.MouseAdapter() {
-                public void mouseClicked(java.awt.event.MouseEvent evt) {
-                    new OptionSelectUI(menu, cartController, optionController, UserMainUI.this);
-                }
-            });
 
             menuItemPanel.add(imgLabel);
             menuItemPanel.add(Box.createVerticalStrut(5));
@@ -106,14 +111,44 @@ public class UserMainUI extends JFrame {
         menuPanel.repaint();
     }
 
-//cart.java 수정으로 인해 수정
     public void refreshCart() {
         cartPanel.removeAll();
-        for (OrderItem item : cart.getItems()) {
-            int quantity = item.getQuantity();
-            JLabel label = new JLabel(item.getOrderDescription() + " x" + quantity + " = ₩" + item.getTotalPrice());
-            cartPanel.add(label);
+
+        JPanel itemPanel = new JPanel();
+        itemPanel.setLayout(new BoxLayout(itemPanel, BoxLayout.Y_AXIS));
+
+        for (var entry : cart.getItems()) {
+            OrderItem item = entry;
+            int quantity = entry.getQuantity();
+
+            JLabel label = new JLabel(item.getOrderDescription() + " x" + quantity + " = ₩" + (item.getTotalPrice() * quantity));
+
+            JPanel linePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            linePanel.add(label);
+            linePanel.setOpaque(false);
+            linePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, label.getPreferredSize().height));
+
+            itemPanel.add(linePanel);
         }
+        // 총합 패널 (아랫쪽, 오른쪽 정렬)
+        JLabel totalLabel = new JLabel("총 합계: ₩" + cartController.getCartTotal());
+        totalLabel.setFont(new Font("Dialog", Font.BOLD, 14));
+
+        JButton payButton = new JButton("결제");
+        payButton.setFont(new Font("Dialog", Font.BOLD, 14));
+        payButton.addActionListener(e -> new PaymentUI(cartController.getCartTotal(), cart, this));
+
+        JPanel summaryPanel = new JPanel();
+        summaryPanel.setLayout(new BorderLayout());
+        summaryPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        summaryPanel.add(totalLabel, BorderLayout.WEST);
+        summaryPanel.add(payButton, BorderLayout.EAST);
+
+        // cartPanel을 상하로 분할
+        cartPanel.setLayout(new BorderLayout());
+        cartPanel.add(itemPanel, BorderLayout.CENTER);
+        cartPanel.add(summaryPanel, BorderLayout.SOUTH);
+
         cartPanel.revalidate();
         cartPanel.repaint();
     }

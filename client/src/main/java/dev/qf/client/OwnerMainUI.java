@@ -21,9 +21,8 @@ public class OwnerMainUI extends JFrame {
     private DefaultTableModel tableModel;
     private final OrderService orderService;
 
-
     private static final DateTimeFormatter TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy년M월d일(E) h시m분", Locale.KOREAN);
+            DateTimeFormatter.ofPattern("yyyy년 M월 d일 (E) a h시 mm분", Locale.KOREAN);
 
     public OwnerMainUI() {
         this.orderService = Main.getClientOrderService();
@@ -75,15 +74,15 @@ public class OwnerMainUI extends JFrame {
         centerPanel.add(new JScrollPane(orderTable), BorderLayout.CENTER);
 
         JPanel navigationButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        JButton categoryButton = new JButton("카테고리 관리");
+        JButton mainUiButton = new JButton("메인 UI");
         JButton menuButton = new JButton("메뉴 관리");
         JButton exitButton = new JButton("종료");
 
-        categoryButton.addActionListener(e -> showCategoryManagement());
+        mainUiButton.addActionListener(e -> showUserMainUI());
         menuButton.addActionListener(e -> showMenuManagement());
         exitButton.addActionListener(e -> System.exit(0));
 
-        navigationButtonPanel.add(categoryButton);
+        navigationButtonPanel.add(mainUiButton);
         navigationButtonPanel.add(menuButton);
         navigationButtonPanel.add(exitButton);
 
@@ -104,9 +103,9 @@ public class OwnerMainUI extends JFrame {
         });
     }
 
-    private void showCategoryManagement() {
+    private void showUserMainUI() {
         this.dispose();
-        new CategoryManagementUI().setVisible(true);
+        new UserMainUI().setVisible(true);
     }
 
     private void showMenuManagement() {
