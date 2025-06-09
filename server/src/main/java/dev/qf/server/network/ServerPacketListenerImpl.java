@@ -1,6 +1,7 @@
 package dev.qf.server.network;
 
 import com.google.common.primitives.Ints;
+import common.Order;
 import common.Category;
 import common.Menu;
 import common.network.SynchronizeData;
@@ -49,13 +50,6 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
         if (!this.handler.isEncrypted()) {
             throw new IllegalStateException("Client is not encrypted");
         }
-
-        // 메뉴 복구 시도
-        if (packet.registryId().equalsIgnoreCase("all") ||
-                packet.registryId().equals("categories")) {
-            restoreOrphanMenusFromBackup();
-        }
-
         Registry<?> registry = RegistryManager.getAsId(packet.registryId());
 
         if (packet.registryId().equalsIgnoreCase("all")) {
@@ -65,7 +59,6 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
             });
             return;
         }
-
         if (registry == null) {
             logger.warn("Registry {} not found", packet.registryId());
             logger.warn("skipping this packet...");
@@ -99,19 +92,10 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
 
     @Override
     public void onUpdateReceived(DataAddedC2SPacket packet) {
-        if ("menus".equals(packet.registryId()) && packet.data() instanceof Menu menu) {
-            if (menu.name().startsWith("[DELETED]")) {
-                handleMenuDeletion(menu.id());
-                logger.info("Processing menu deletion: {}", menu.name());
-                return;
-            }
-        }
-
         Registry<?> registry = RegistryManager.getAsId(packet.registryId());
         registry.add(packet.data().getRegistryElementId(), packet.data());
 
         KioskNettyServer server = (KioskNettyServer) handler.connection;
-        List<SynchronizeData<?>> data = new ArrayList<>(registry.getAll());
         server.getHandlers().forEach(handler ->
                 handler.send(new UpdateDataPacket.ResponseDataS2CPacket(
                         registry.getRegistryId(),
@@ -436,6 +420,18 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
             throw new IllegalStateException("Client is not encrypted");
         }
         // TODO IMPLEMENT PACKET HANDLING
+    }
+
+    @Override
+    public void onOrderStatusChanged(OrderStatusChangedC2SPacket packet) {
+        if (!this.handler.isEncrypted()) {
+            throw new IllegalStateException("Client is not encrypted");
+        }
+        Order order = packet.order();
+        RegistryManager.ORDERS.addOrder(order);
+
+        KioskNettyServer server = (KioskNettyServer) handler.connection;
+        server.broadCast(new OrderUpdatedS2CPacket(order));
     }
 
     @Override

@@ -1,6 +1,8 @@
 package dev.qf.client.network;
 
 import common.Menu;
+import common.Order;
+import common.OrderService;
 import common.network.SynchronizeData;
 import common.network.encryption.NetworkEncryptionUtils;
 import common.network.handler.SerializableHandler;
@@ -8,7 +10,10 @@ import common.network.handler.listener.ClientPacketListener;
 import common.network.packet.*;
 import common.registry.Registry;
 import common.registry.RegistryManager;
+import common.util.Container;
 import common.util.KioskLoggerFactory;
+import dev.qf.client.ClientOrderService;
+import dev.qf.client.Main;
 import dev.qf.client.event.DataReceivedEvent;
 import org.slf4j.Logger;
 import common.Category;
@@ -22,7 +27,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class ClientPacketListenerImpl implements ClientPacketListener {
-    private SerializableHandler handler;
+    private final SerializableHandler handler;
     private final Logger logger = KioskLoggerFactory.getLogger();
 
     public ClientPacketListenerImpl(SerializableHandler channel) {
@@ -47,7 +52,7 @@ public class ClientPacketListenerImpl implements ClientPacketListener {
         logger.info("Client public key sent");
         this.handler.send(secretPacket);
         this.handler.encrypt(encrpytionCipher, decryptionCipher);
-    }
+   }
 
     @Override
     public void onReceivedData(UpdateDataPacket.ResponseDataS2CPacket packet) {
@@ -59,102 +64,15 @@ public class ClientPacketListenerImpl implements ClientPacketListener {
         Registry<? extends SynchronizeData<?>> registry =  RegistryManager.getAsId(packet.registryId());
         if (registry == null) {
             logger.error("Received data from unknown registry : {}", packet.registryId());
+            return;
         }
-
-        // 메뉴 데이터인 경우 중복 제거
-        if ("menus".equals(packet.registryId())) {
-            logger.info("Processing menus data with duplicate removal (original: {} items)", packet.data().size());
-            logger.info("Registry size before processing: {}", registry.getAll().size());
-
-            Map<String, SynchronizeData<?>> uniqueMenus = new LinkedHashMap<>();
-
-            for (SynchronizeData<?> data : packet.data()) {
-                Menu menu = (Menu) data;
-                String menuId = menu.id();
-
-                if (uniqueMenus.containsKey(menuId)) {
-                    Menu previousMenu = (Menu) uniqueMenus.get(menuId);
-                    logger.warn("Duplicate menu detected - ID: {}, Name: {}", menuId, menu.name());
-                    logger.warn("Previous soldOut: {}, New soldOut: {}", previousMenu.soldOut(), menu.soldOut());
-                    logger.info("Replacing with newer data");
-                } else {
-                    logger.debug("Added unique menu: {} ({}), soldOut: {}", menu.name(), menuId, menu.soldOut());
-                }
-
-
-                uniqueMenus.put(menuId, data);
-            }
-
-            // Registry 초기화
-            try {
-                List<SynchronizeData<?>> existingMenus = new ArrayList<>(registry.getAll());
-                for (SynchronizeData<?> existingData : existingMenus) {
-                    Menu existingMenu = (Menu) existingData;
-                    registry.remove(existingMenu.id());
-                }
-                logger.info("Registry cleared - removed {} existing menus", existingMenus.size());
-            } catch (Exception e) {
-                logger.warn("Cannot remove existing items: {}", e.getMessage());
-            }
-
-            for (SynchronizeData<?> data : uniqueMenus.values()) {
-                Menu menu = (Menu) data;
-                registry.add(menu.id(), data);
-                logger.debug("Added to registry: {} - soldOut: {}", menu.name(), menu.soldOut());
-            }
-
-            logger.info("Menus registry updated with {} unique items (original: {} items)",
-                    uniqueMenus.size(), packet.data().size());
-            logger.info("Registry size after processing: {}", registry.getAll().size());
-
-            for (SynchronizeData<?> finalData : registry.getAll()) {
-                Menu finalMenu = (Menu) finalData;
-                logger.info("Final menu state: {} ({}) - soldOut: {}",
-                        finalMenu.name(), finalMenu.id(), finalMenu.soldOut());
-            }
-        }
-        else if ("categories".equals(packet.registryId())) {
-            logger.info("Processing categories data with duplicate removal (original: {} items)", packet.data().size());
-            logger.info("Registry size before processing: {}", registry.getAll().size());
-
-            Map<String, SynchronizeData<?>> uniqueData = new LinkedHashMap<>();
-
-            for (SynchronizeData<?> data : packet.data()) {
-                Category category = (Category) data;
-                String id = category.cateId();
-
-                if (uniqueData.containsKey(id)) {
-                    logger.warn("Duplicate category detected and replaced: {} ({})",
-                            category.cateName(), id);
-                } else {
-                    logger.info("Added unique category: {} ({})",
-                            category.cateName(), id);
-                }
-                uniqueData.put(id, data);
-            }
-
-            try {
-                for (SynchronizeData<?> existingData : registry.getAll()) {
-                    Category existingCategory = (Category) existingData;
-                    registry.remove(existingCategory.cateId());
-                }
-                logger.info("Registry cleared by removing all existing items");
-            } catch (Exception e) {
-                logger.warn("Cannot remove existing items: {}", e.getMessage());
-            }
-
-            for (SynchronizeData<?> data : uniqueData.values()) {
-                Category category = (Category) data;
-                registry.add(category.cateId(), data);
-            }
-
-            logger.info("Categories registry updated with {} unique items (original: {} items)",
-                    uniqueData.size(), packet.data().size());
-            logger.info("Registry size after processing: {}", registry.getAll().size());
-        } else {
+        try {
+            registry.unfreeze();
+            registry.clear();
             registry.addAll(packet.data());
+        } finally {
+            registry.freeze();
         }
-
         DataReceivedEvent.EVENT.invoker().onRegistryChanged(this.handler, registry);
     }
 
@@ -168,6 +86,15 @@ public class ClientPacketListenerImpl implements ClientPacketListener {
         if (!this.handler.isEncrypted()) {
             throw new IllegalStateException("Client is not encrypted");
         }
+    }
+
+    @Override
+    public void onOrderStatusChanged(OrderUpdatedS2CPacket packet) {
+        Order order = RegistryManager.ORDERS.get(packet.order().orderId());
+        if (order.cart().equals(packet.order().cart())) {
+            logger.warn("order is not looks same. will be override. before : {}", order);
+        }
+        RegistryManager.ORDERS.addOrder(order);
     }
 
     @Override

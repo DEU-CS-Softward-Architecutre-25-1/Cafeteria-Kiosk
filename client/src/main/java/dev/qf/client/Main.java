@@ -5,7 +5,11 @@ import common.event.ChannelEstablishedEvent;
 import common.network.packet.HandShakeC2SInfo;
 import common.registry.RegistryManager;
 import common.util.KioskLoggerFactory;
+import common.event.ChannelEstablishedEvent;
+import dev.qf.client.network.ClientPacketListenerFactory;
 import dev.qf.client.network.KioskNettyClient;
+import common.network.handler.factory.PacketListenerFactory;
+import common.util.Container;
 import org.slf4j.Logger;
 
 import javax.swing.*;
@@ -14,12 +18,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 통합된 메인 클래스 - 메뉴 관리 시스템 포함
- */
 public class Main {
-    public static KioskNettyClient INSTANCE = new KioskNettyClient();
+    public static final KioskNettyClient INSTANCE = new KioskNettyClient();
     private static final Logger LOGGER = KioskLoggerFactory.getLogger();
+    private static ClientOrderService clientOrderService;
     private static final ScheduledExecutorService REGISTRY_REFRESH_EXECUTOR = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder()
                     .setDaemon(true)
@@ -30,8 +32,11 @@ public class Main {
     private static Thread mainThread;
 
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
-        INSTANCE.run();
+        mainThread = Thread.currentThread();
         ChannelEstablishedEvent.EVENT.register((handler -> mainThread.interrupt()));
+
+        INSTANCE.run();
+
         synchronized (mainThread) {
             try {
                 mainThread.wait();
@@ -50,6 +55,7 @@ public class Main {
 
         System.out.println("서버에 연결됨. HandShake 전송...");
         INSTANCE.sendSerializable(new HandShakeC2SInfo("test"));
+
         REGISTRY_REFRESH_EXECUTOR.scheduleAtFixedRate(INSTANCE::sendSyncPacket, 5,5, TimeUnit.MINUTES);
 
         // Registry 데이터 대기 (타임아웃 추가)
@@ -103,5 +109,13 @@ public class Main {
                     break;
             }
         });
+    }
+
+    public static ClientOrderService getClientOrderService() {
+        return clientOrderService;
+    }
+
+    static {
+        Container.put(PacketListenerFactory.class, new ClientPacketListenerFactory());
     }
 }

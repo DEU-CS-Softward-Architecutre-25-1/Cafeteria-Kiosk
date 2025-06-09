@@ -9,4 +9,5 @@ public interface ServerPacketListener extends PacketListener {
     void onUpdateReceived(DataAddedC2SPacket packet);
     void onDeleteReceived(DataDeletedC2SPacket packet);
     void onRequestVerify(VerifyPurchasePackets.VerifyPurchasePacketC2S packet);
+    void onOrderStatusChanged(OrderStatusChangedC2SPacket packet);
 }

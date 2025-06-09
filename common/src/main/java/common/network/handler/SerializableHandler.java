@@ -90,7 +90,7 @@ public class SerializableHandler extends SimpleChannelInboundHandler<SidedPacket
     @Nullable
     public ChannelFuture send(Serializable<?> packet) {
         if (this.channel != null && this.channel.isOpen()) {
-            this.channel.writeAndFlush(packet);
+            return this.channel.writeAndFlush(packet);
         }
         return null;
     }

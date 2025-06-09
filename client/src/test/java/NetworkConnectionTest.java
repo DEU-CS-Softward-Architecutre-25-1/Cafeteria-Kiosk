@@ -1,17 +1,16 @@
-import common.Option;
-import common.OptionGroup;
-import common.OrderItem;
 import common.network.Connection;
 import common.network.packet.HandShakeC2SInfo;
+import common.network.packet.UpdateDataPacket;
 import common.registry.RegistryManager;
 import common.util.Container;
+import common.util.KioskLoggerFactory;
 import dev.qf.client.Main;
 import dev.qf.client.network.KioskNettyClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class NetworkConnectionTest {
     @BeforeAll
@@ -35,10 +34,24 @@ public class NetworkConnectionTest {
 
     @Test
     public void testPurchaseSerialization() {
-        Map<OptionGroup, Option> optionMap = new HashMap<>();
-        optionMap.put(RegistryManager.OPTION_GROUPS.get(0), RegistryManager.OPTIONS.get(0));
-        OrderItem item = new OrderItem(RegistryManager.MENUS.get(0), optionMap, 1);
+        AtomicBoolean isFrozen = new AtomicBoolean(true);
+        UpdateDataPacket.RequestDataC2SPacket packet = new UpdateDataPacket.RequestDataC2SPacket(RegistryManager.ORDERS.getRegistryId());
+        KioskNettyClient client = (KioskNettyClient) Container.get(Connection.class);
+        var future = client.sendSerializable(packet);
 
+        future.addListener(f -> {
+            if (f.isSuccess()) {
+                isFrozen.set(false);
+            } else {
+                f.cause().printStackTrace();
+            }
+        });
+        while(isFrozen.get()) {
+            Thread.yield();
+        }
 
+        Logger logger = KioskLoggerFactory.getLogger();
+        logger.info("Serialized purchase data sent successfully.");
+        logger.info("items : {}", RegistryManager.ORDERS.getAll());
     }
 }

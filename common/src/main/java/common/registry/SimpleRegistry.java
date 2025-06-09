@@ -24,14 +24,14 @@ import java.util.concurrent.locks.ReentrantLock;
  * @param <T> 저장할 데이터 자료형
  */
 public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T> {
-    private static final Logger LOGGER = KioskLoggerFactory.getLogger();
-    private final Map<String, T> idToEntry = new Object2ObjectOpenHashMap<>();
-    private final Map<T, String> entryToId = new Object2ObjectOpenHashMap<>();
-    private final Set<T> ITEMS = new ObjectLinkedOpenHashSet<>();
-    private final Reference2IntMap<T> entryToRawIndex = new Reference2IntOpenHashMap<>();
-    private final Int2ReferenceMap<T> rawIndexToEntry = new Int2ReferenceOpenHashMap<>();
-    private final ReentrantLock lock = new ReentrantLock();
-    private final AtomicBoolean frozen = new AtomicBoolean(false);
+    protected final Logger LOGGER = KioskLoggerFactory.getLogger();
+    protected final Map<String, T> idToEntry = new Object2ObjectOpenHashMap<>();
+    protected final Map<T, String> entryToId = new Object2ObjectOpenHashMap<>();
+    protected final Set<T> ITEMS = new ObjectLinkedOpenHashSet<>();
+    protected final Reference2IntMap<T> entryToRawIndex = new Reference2IntOpenHashMap<>();
+    protected final Int2ReferenceMap<T> rawIndexToEntry = new Int2ReferenceOpenHashMap<>();
+    protected final ReentrantLock lock = new ReentrantLock();
+    protected final AtomicBoolean frozen = new AtomicBoolean(false);
     private final Class<T> clazz;
     @NotNull
     private final Codec<T> codec;
