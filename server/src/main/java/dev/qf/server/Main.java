@@ -1,5 +1,6 @@
 package dev.qf.server;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import common.util.KioskLoggerFactory;
 import common.network.handler.factory.PacketListenerFactory;
 import common.util.Container;
@@ -13,11 +14,20 @@ import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import org.slf4j.Logger;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
 public class Main {
     public static final KioskNettyServer INSTANCE = new KioskNettyServer();
     private static final Logger LOGGER = KioskLoggerFactory.getLogger();
     private static ExternalDataManager manager;
-
+    private static final ScheduledExecutorService DB_BACKUP_SCHEDULER = Executors.newSingleThreadScheduledExecutor(
+            new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .setNameFormat("external_data_backup_thread")
+                    .setUncaughtExceptionHandler((t, e) -> KioskLoggerFactory.getLogger().error("DB backup thread error", e))
+                    .build()
+    );
     public static void main(String[] args) {
         OptionParser optionParser = new OptionParser();
         OptionSpec<Void> optionSpec = optionParser.accepts("debuggingItems");
@@ -56,6 +66,8 @@ public class Main {
 
         KioskLoggerFactory.getLogger().info("Server started");
         Container.put(PacketListenerFactory.class, new ServerPacketListenerFactory());
+
+        DB_BACKUP_SCHEDULER.scheduleAtFixedRate(() -> manager.saveAll(), 5, 5, java.util.concurrent.TimeUnit.MINUTES);
 
         INSTANCE.run();
     }
