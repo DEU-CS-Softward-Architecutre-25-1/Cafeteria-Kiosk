@@ -45,7 +45,7 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
     }
 
     @Override
-    public @NotNull String getRegistryId() {
+    public String getRegistryId() {
         return this.registryId;
     }
 
@@ -81,6 +81,14 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
         }
         try {
             this.lock.lock();
+
+            T existingEntry = idToEntry.get(id);
+            if (existingEntry != null) {
+                this.ITEMS.remove(existingEntry);
+                this.entryToId.remove(existingEntry);
+                this.entryToRawIndex.remove(existingEntry);
+            }
+
             this.ITEMS.add((T) entry);
             this.entryToId.put((T) entry, id);
             this.idToEntry.put(id, (T) entry);
@@ -104,6 +112,14 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
                 if (!clazz.isAssignableFrom(data.getClass())) {
                     throw new IllegalArgumentException("Entry is not of type " + clazz.getName());
                 }
+
+                T existingEntry = idToEntry.get(data.getRegistryElementId());
+                if (existingEntry != null) {
+                    this.ITEMS.remove(existingEntry);
+                    this.entryToId.remove(existingEntry);
+                    this.entryToRawIndex.remove(existingEntry);
+                }
+
                 this.ITEMS.add((T) data);
                 this.entryToId.put((T) data, data.getRegistryElementId());
                 this.idToEntry.put(data.getRegistryElementId(), (T) data);
@@ -171,5 +187,50 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
     @Override
     public @NotNull Iterator<T> iterator() {
         return ITEMS.iterator();
+    }
+
+    @Override
+    public boolean remove(String id) {
+        try {
+            if (this.isFrozen()) {
+                throw new IllegalStateException("Registry is already frozen");
+            }
+            lock.lock();
+            T item = idToEntry.get(id);
+            if (item == null) {
+                return false;
+            }
+
+            idToEntry.remove(id);
+            entryToId.remove(item);
+            ITEMS.remove(item);
+
+            rebuildIndexMaps();
+
+            LOGGER.info("Removed {} with id {}", item, id);
+            return true;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public boolean remove(T entry) {
+        if (entry == null) return false;
+        String id = entryToId.get(entry);
+        if (id == null) return false;
+        return remove(id);
+    }
+
+    private void rebuildIndexMaps() {
+        entryToRawIndex.clear();
+        rawIndexToEntry.clear();
+
+        int index = 0;
+        for (T item : ITEMS) {
+            entryToRawIndex.put(item, index);
+            rawIndexToEntry.put(index, item);
+            index++;
+        }
     }
 }
