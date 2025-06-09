@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * {@link Registry}의 구현형 클래스이다. 특정한 레지스트리가 필요하지 않는다면 이 레지스트리를 사용하면 된다.
@@ -30,7 +31,7 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
     protected final Set<T> ITEMS = new ObjectLinkedOpenHashSet<>();
     protected final Reference2IntMap<T> entryToRawIndex = new Reference2IntOpenHashMap<>();
     protected final Int2ReferenceMap<T> rawIndexToEntry = new Int2ReferenceOpenHashMap<>();
-    protected final ReentrantLock lock = new ReentrantLock();
+    protected final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     protected final AtomicBoolean frozen = new AtomicBoolean(false);
     private final Class<T> clazz;
     @NotNull
@@ -45,14 +46,17 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
     }
 
     @Override
-    public String getRegistryId() {
+    public @NotNull String getRegistryId() {
         return this.registryId;
     }
 
     @Override
     public Optional<T> getById(String id) {
-        synchronized (lock) {
+        try {
+            this.lock.readLock().lock();
             return Optional.ofNullable(idToEntry.get(id));
+        } finally {
+            this.lock.readLock().unlock();
         }
     }
 
@@ -79,9 +83,8 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
         if (!clazz.isAssignableFrom(entry.getClass())) {
             throw new IllegalArgumentException("Entry is not of type " + clazz.getName());
         }
+        this.lock.writeLock().lock();
         try {
-            this.lock.lock();
-
             T existingEntry = idToEntry.get(id);
             if (existingEntry != null) {
                 this.ITEMS.remove(existingEntry);
@@ -95,7 +98,7 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
             this.rawIndexToEntry.put(size(), (T) entry);
             this.entryToRawIndex.put((T) entry, size());
         } finally {
-            this.lock.unlock();
+            this.lock.writeLock().unlock();
         }
         LOGGER.info("Registered {} with id {}", entry, id);
         return (T) entry;
@@ -106,8 +109,8 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
         if (this.isFrozen()) {
             throw new IllegalStateException("Registry is already frozen");
         }
+        lock.writeLock().lock();
         try {
-            lock.lock();
             dataList.forEach(data -> {
                 if (!clazz.isAssignableFrom(data.getClass())) {
                     throw new IllegalArgumentException("Entry is not of type " + clazz.getName());
@@ -127,7 +130,7 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
                 this.entryToRawIndex.put((T) data, size());
             });
         } finally {
-            lock.unlock();
+            lock.writeLock().unlock();
         }
     }
 
@@ -146,15 +149,15 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
         if (this.isFrozen()) {
             throw new IllegalStateException("Registry is already frozen");
         }
-        lock.lock();
         try {
+            lock.writeLock().lock();
             this.ITEMS.clear();
             this.entryToId.clear();
             this.idToEntry.clear();
             this.rawIndexToEntry.clear();
             this.entryToRawIndex.clear();
         } finally {
-            lock.unlock();
+            lock.writeLock().unlock();
         }
     }
 
@@ -165,22 +168,31 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
 
     @Override
     public int getRawId(T var1) {
-        synchronized (lock) {
+        try {
+            this.lock.readLock().lock();
             return entryToRawIndex.getOrDefault(var1, ABSENT_LOW_INDEX);
+        } finally {
+            this.lock.readLock().unlock();
         }
     }
 
     @Override
     public @Nullable T get(int index) {
-        synchronized (lock) {
+        try {
+            this.lock.readLock().lock();
             return rawIndexToEntry.get(index);
+        } finally {
+            this.lock.readLock().unlock();
         }
     }
 
     @Override
     public int size() {
-        synchronized (lock) {
+        try {
+            this.lock.readLock().lock();
             return this.ITEMS.size();
+        } finally {
+            this.lock.readLock().unlock();
         }
     }
 
@@ -191,11 +203,11 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
 
     @Override
     public boolean remove(String id) {
+        if (this.isFrozen()) {
+            throw new IllegalStateException("Registry is already frozen");
+        }
         try {
-            if (this.isFrozen()) {
-                throw new IllegalStateException("Registry is already frozen");
-            }
-            lock.lock();
+            lock.writeLock().lock();
             T item = idToEntry.get(id);
             if (item == null) {
                 return false;
@@ -210,7 +222,7 @@ public class SimpleRegistry<T extends SynchronizeData<?>> implements Registry<T>
             LOGGER.info("Removed {} with id {}", item, id);
             return true;
         } finally {
-            lock.unlock();
+            lock.writeLock().unlock();
         }
     }
 

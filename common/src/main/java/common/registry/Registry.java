@@ -12,7 +12,7 @@ import java.util.Optional;
  * 동기화 될 요소들이 저장되는 콘테이너의 인터페이스이다. 전체 레지스트리는 {@link RegistryManager}를 통해 확인할 수 있다.
  * @param <T> 저장될 데이터 타입
  */
-public interface Registry<T extends SynchronizeData<?>> extends IndexIterable<T> {
+public interface Registry<T extends SynchronizeData<?>> extends IndexIterable<T>, AutoCloseable {
     String getRegistryId();
     Optional<T> getById(String id);
     boolean isFrozen();
@@ -33,4 +33,9 @@ public interface Registry<T extends SynchronizeData<?>> extends IndexIterable<T>
      * @return 저장되는 데이터의 클래스타입
      */
     Class<T> getClazz();
+
+    @Override
+    default void close() {
+        this.freeze();
+    }
 }
