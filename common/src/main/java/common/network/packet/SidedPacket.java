@@ -1,7 +1,6 @@
 package common.network.packet;
 
-import common.network.Serializable;
-import common.network.handler.PacketListener;
+import common.network.handler.listener.PacketListener;
 
 public interface SidedPacket<T extends PacketListener> extends Serializable<SidedPacket> {
     Side getSide();

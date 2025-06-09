@@ -7,6 +7,9 @@ import io.netty.handler.codec.EncoderException;
 
 import java.nio.charset.StandardCharsets;
 
+/**
+ * 문자열을 {@link ByteBuf} 로, {@link ByteBuf}를 {@link String}으로 변환하는 유틸리티 클래스이다. <br>
+ */
 public class StringEncodings {
     public static String decode(ByteBuf buf, int maxLength) {
         int i = ByteBufUtil.utf8MaxBytes(maxLength);

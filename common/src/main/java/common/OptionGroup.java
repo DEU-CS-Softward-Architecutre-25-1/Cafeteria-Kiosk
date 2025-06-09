@@ -1,5 +1,9 @@
 package common;
 
+import common.network.SynchronizeData;
+import common.registry.RegistryManager;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import org.jetbrains.annotations.TestOnly;
 
 import java.util.List;
@@ -10,8 +14,19 @@ public record OptionGroup(
         String name,
         boolean required,
         List<Option> options
-) {
+) implements SynchronizeData<OptionGroup> {
+    public static final Codec<OptionGroup> SYNC_CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                    Codec.STRING.fieldOf("id").forGetter(OptionGroup::id),
+                    Codec.STRING.fieldOf("name").forGetter(OptionGroup::name),
+                    Codec.BOOL.fieldOf("required").forGetter(OptionGroup::required),
+                    Option.CODEC.listOf().fieldOf("options").forGetter(OptionGroup::options)
+            ).apply(instance, OptionGroup::new)
+    );
 
+    public static final Codec<OptionGroup> CODEC = Codec.lazyInitialized(() -> Codec.STRING.xmap(
+            s -> RegistryManager.OPTION_GROUPS.getById(s).orElseThrow(() -> new IllegalArgumentException("OptionGroup not found"))
+            , OptionGroup::id
+            ));
 
     @TestOnly
     //임시로 테스트를 위해 넣은 예시
@@ -66,5 +81,15 @@ public record OptionGroup(
         );
 
         return mockOptionGroups.getOrDefault(menuId, List.of());
+    }
+
+    @Override
+    public Codec<OptionGroup> getSyncCodec() {
+        return SYNC_CODEC;
+    }
+
+    @Override
+    public String getRegistryElementId() {
+        return this.id;
     }
 }
