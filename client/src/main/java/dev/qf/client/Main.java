@@ -45,7 +45,7 @@ public class Main {
         }
 
         if (!INSTANCE.isConnected()) {
-            System.err.println("서버에 연결할 수 없습니다.");
+            LOGGER.error("서버에 연결할 수 없습니다.");
             JOptionPane.showMessageDialog(null,
                     "서버를 먼저 실행해주세요.",
                     "연결 오류",
@@ -53,13 +53,13 @@ public class Main {
             System.exit(1);
         }
 
-        System.out.println("서버에 연결됨. HandShake 전송...");
+        LOGGER.info("서버에 연결됨. HandShake 전송...");
         INSTANCE.sendSerializable(new HandShakeC2SInfo("test"));
 
         REGISTRY_REFRESH_EXECUTOR.scheduleAtFixedRate(INSTANCE::sendSyncPacket, 5,5, TimeUnit.MINUTES);
 
         // Registry 데이터 대기 (타임아웃 추가)
-        System.out.println("서버 데이터 대기 중...");
+        LOGGER.info("서버 데이터 대기 중...");
         int dataWaitAttempts = 0;
         while (RegistryManager.CATEGORIES.size() == 0 && dataWaitAttempts < 50) {
             Thread.sleep(200);
@@ -70,16 +70,16 @@ public class Main {
         }
 
         if (RegistryManager.CATEGORIES.size() == 0) {
-            System.err.println("서버로부터 데이터를 받지 못했습니다.");
+            LOGGER.error("서버로부터 데이터를 받지 못했습니다.");
             JOptionPane.showMessageDialog(null,
                     "서버로부터 데이터를 받지 못했습니다.",
                     "데이터 오류",
                     JOptionPane.ERROR_MESSAGE);
 
             // 데이터가 없어도 UI는 열어주기
-            System.out.println("데이터 없이 UI 실행...");
+            LOGGER.warn("데이터 없이 UI 실행...");
         } else {
-            System.out.println("데이터 로드 완료. 카테고리 수: " + RegistryManager.CATEGORIES.size());
+            LOGGER.info("데이터 로드 완료. 카테고리 수: {}", RegistryManager.CATEGORIES.size());
         }
 
         // UI 선택 대화상자
