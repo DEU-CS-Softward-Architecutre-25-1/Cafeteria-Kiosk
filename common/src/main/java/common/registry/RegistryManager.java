@@ -31,7 +31,7 @@ public class RegistryManager {
     public static final Registry<OptionGroup> OPTION_GROUPS = new SimpleRegistry<>("option_groups", OptionGroup.SYNC_CODEC, OptionGroup.class);
     public static final Registry<Menu> MENUS = new SimpleRegistry<>("menus", Menu.SYNC_CODEC, Menu.class);
     public static final Registry<Category> CATEGORIES = new SimpleRegistry<>("categories", Category.SYNC_CODEC, Category.class);
-    public static final Registry<Order> ORDERS = new SimpleRegistry<>("orders", Order.SYNC_CODEC, Order.class);
+    public static final OrderRegistry ORDERS = new OrderRegistry();
 
     private static void addRegistry(Registry<?> registry) {
         REGISTRY_MAP.put(registry.getRegistryId(), registry);
