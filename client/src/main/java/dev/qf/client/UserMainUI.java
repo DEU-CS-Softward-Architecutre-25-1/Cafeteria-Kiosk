@@ -106,12 +106,12 @@ public class UserMainUI extends JFrame {
         menuPanel.repaint();
     }
 
+//cart.java 수정으로 인해 수정
     public void refreshCart() {
         cartPanel.removeAll();
-        for (var entry : cart.getItems().entrySet()) {
-            OrderItem item = entry.getKey();
-            int quantity = entry.getValue();
-            JLabel label = new JLabel(item.getOrderDescription() + " x" + quantity + " = ₩" + (item.getTotalPrice() * quantity));
+        for (OrderItem item : cart.getItems()) {
+            int quantity = item.getQuantity();
+            JLabel label = new JLabel(item.getOrderDescription() + " x" + quantity + " = ₩" + item.getTotalPrice());
             cartPanel.add(label);
         }
         cartPanel.revalidate();

@@ -1,9 +1,9 @@
 package common;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import common.network.SynchronizeData;
 import common.registry.RegistryManager;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import org.jetbrains.annotations.TestOnly;
 
 import java.util.List;
