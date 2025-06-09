@@ -1,29 +1,29 @@
 package dev.qf.client;
 
 import common.*;
+import common.network.packet.OrderStatusChangedC2SPacket;
 import common.network.packet.UpdateDataPacket;
 import dev.qf.client.network.KioskNettyClient;
 import common.util.KioskLoggerFactory;
 import common.registry.RegistryManager;
 import common.registry.Registry;
-import common.network.SynchronizeData;
+
+import common.network.Connection;
+import common.util.Container;
 
 import java.util.*;
+
 import org.slf4j.Logger;
 import io.netty.channel.ChannelFuture;
 
 public class ClientOrderService implements OrderService {
-    private final List<Order> orders = Collections.synchronizedList(new ArrayList<>());
     private KioskNettyClient kioskClient;
     private static final Logger LOGGER = KioskLoggerFactory.getLogger();
 
     private OwnerMainUI ownerMainUIInstance;
 
     public ClientOrderService() {
-    }
-
-    public void setKioskClient(KioskNettyClient client) {
-        this.kioskClient = client;
+        kioskClient = (KioskNettyClient) Container.get(Connection.class);
     }
 
     public void setOwnerMainUI(OwnerMainUI ownerMainUI) {
@@ -43,8 +43,8 @@ public class ClientOrderService implements OrderService {
      */
     public void requestOrderListUpdate() {
         if (kioskClient != null && kioskClient.isConnected()) {
-            UpdateDataPacket.RequestDataC2SPacket requestOrdersPacket = new UpdateDataPacket.RequestDataC2SPacket("orders");
-            ChannelFuture future = kioskClient.sendSerializable(requestOrdersPacket.getPacketId(), requestOrdersPacket);
+            UpdateDataPacket.RequestDataC2SPacket requestOrdersPacket = new UpdateDataPacket.RequestDataC2SPacket(RegistryManager.ORDERS.getRegistryId());
+            ChannelFuture future = kioskClient.sendSerializable(requestOrdersPacket);
             if (future != null) {
                 future.addListener(f -> {
                     if (f.isSuccess()) {
@@ -63,49 +63,37 @@ public class ClientOrderService implements OrderService {
 
     @Override
     public List<Order> getOrderList() {
-        Registry<?> ordersRegistry = RegistryManager.getAsId("orders");
-        if (ordersRegistry != null) {
-            try {
-                @SuppressWarnings("unchecked")
-                List<Order> registeredOrders = (List<Order>) ordersRegistry.getAll();
-                synchronized (orders) {
-                    orders.clear();
-                    orders.addAll(registeredOrders);
-                }
-                return Collections.unmodifiableList(orders);
-            } catch (ClassCastException e) {
-                LOGGER.error("Registry 'orders' contains non-Order elements. Type mismatch.", e);
-                return Collections.emptyList();
-            }
-        } else {
-            LOGGER.warn("Registry 'orders' not found in RegistryManager. Returning empty list.");
-            return Collections.emptyList();
-        }
+        return RegistryManager.ORDERS.getAll();
     }
 
     @Override
     public void acceptOrder(int orderId) {
-        sendOrderStatusUpdateUsingExistingPacket(orderId, OrderStatus.ACCEPTED);
+        sendOrderStatusUpdated(orderId, OrderStatus.ACCEPTED);
     }
 
     @Override
     public void cancelOrder(int orderId) {
-        sendOrderStatusUpdateUsingExistingPacket(orderId, OrderStatus.CANCELED);
+        sendOrderStatusUpdated(orderId, OrderStatus.CANCELED);
     }
 
     @Override
     public void updateOrderStatus(int orderId, OrderStatus newStatus) {
         if (kioskClient != null && kioskClient.isConnected()) {
-            sendOrderStatusUpdateUsingExistingPacket(orderId, newStatus);
+            sendOrderStatusUpdated(orderId, newStatus);
         } else {
             LOGGER.error("KioskNettyClient가 연결되지 않아 주문 상태를 변경할 수 없습니다.");
         }
     }
 
-    private void sendOrderStatusUpdateUsingExistingPacket(int orderId, OrderStatus status) {
+
+    @Override
+    public Optional<Order> getOrderById(int orderId) {
+        return RegistryManager.ORDERS.getById(String.valueOf(orderId));
+    }
+
+    private void sendOrderStatusUpdated(int orderId, OrderStatus status) {
         if (kioskClient != null && kioskClient.isConnected()) {
-            String requestIdentifier = String.format("order_status_update:%d:%s", orderId, status.name());
-            UpdateDataPacket.RequestDataC2SPacket packet = new UpdateDataPacket.RequestDataC2SPacket(requestIdentifier);
+            OrderStatusChangedC2SPacket packet = new OrderStatusChangedC2SPacket(getOrderById(orderId).orElseThrow());
 
             ChannelFuture future = kioskClient.sendSerializable(packet.getPacketId(), packet);
             if (future != null) {
@@ -125,17 +113,8 @@ public class ClientOrderService implements OrderService {
     }
 
     private void updateLocalOrderStatus(int orderId, OrderStatus newStatus) {
-        synchronized (orders) {
-            for (int i = 0; i < orders.size(); i++) {
-                Order order = orders.get(i);
-                if (order.orderId() == orderId) {
-                    orders.set(i, order.withStatus(newStatus));
-                    LOGGER.info("로컬에서 주문 ID {}의 상태를 {}로 업데이트 완료.", orderId, newStatus);
-                    return;
-                }
-            }
-            LOGGER.error("오류: 로컬에서 주문 ID {}를 찾을 수 없어 상태 업데이트 실패.", orderId);
-        }
+        Order order = getOrderById(orderId).orElseThrow();
+        order.withStatus(newStatus);
         refreshOwnerMainUIOrders();
     }
 }
