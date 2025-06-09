@@ -76,11 +76,7 @@ public class ClientPacketListenerImpl implements ClientPacketListener {
             registry.clear();
             registry.addAll(packet.data());
         } finally {
-            //OrderRegistry는 동적으로 변경되어야 하므로, 동결대상에서 제외.
-            if (registry != RegistryManager.ORDERS) {
-                registry.freeze();
-                logger.info("Registry '{}' has been frozen.", registry.getRegistryId());
-            }
+            registry.freeze();
         }
         DataReceivedEvent.EVENT.invoker().onRegistryChanged(this.handler, registry);
     }
@@ -111,8 +107,13 @@ public class ClientPacketListenerImpl implements ClientPacketListener {
         if (existingOrder != null && !existingOrder.cart().equals(updatedOrder.cart())) {
             logger.warn("Order data seems different. Overriding. Before: {}, After: {}", existingOrder, updatedOrder);
         }
+        try {
+            RegistryManager.ORDERS.unfreeze();
+            RegistryManager.ORDERS.addOrder(updatedOrder);
+        } finally {
+            RegistryManager.ORDERS.freeze();
+        }
 
-        RegistryManager.ORDERS.addOrder(updatedOrder);
         logger.info("Order ID {} has been updated to status: {}", updatedOrder.orderId(), updatedOrder.status());
     }
 
