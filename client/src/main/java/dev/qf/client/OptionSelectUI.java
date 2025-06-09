@@ -28,7 +28,7 @@ public class OptionSelectUI extends JFrame {
         setSize(300, 400);
         setLayout(new BorderLayout());
 
-        this.optionGroups = OptionGroup.loadOptionGroups(menu.id());
+        this.optionGroups = selectedMenu.optionGroup();
 
         JPanel optionPanel = new JPanel(new GridLayout(0, 1));
         for (OptionGroup group : optionGroups) {
