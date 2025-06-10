@@ -34,6 +34,7 @@ public class KioskDBSerializer {
     private static final Map<Class<?>, Function<DataContainer, SynchronizeData<?>>> DESERIALIZER = new HashMap<>();
 
     private static final SQLibType<Path> PATH = new SQLibType<Path>(SQLPrimitive.STRING, Path::toString, Path::of);
+    private static final SQLibType<LocalDateTime> LOCAL_DATE_TIME = new SQLibType<LocalDateTime>(SQLPrimitive.STRING, LocalDateTime::toString, LocalDateTime::parse);
 
     private static <T extends SynchronizeData<?>> void registerSerializer(Class<T> clazz, BiConsumer<DataContainer, T> consumer) {
         SERIALIZER.put((Class<?>) clazz, (BiConsumer<DataContainer, SynchronizeData<?>>) consumer);
@@ -153,7 +154,7 @@ public class KioskDBSerializer {
         registerSerializer(Order.class, (container, order) -> {
             container.put(JavaTypes.INT, "id", order.orderId());
             container.put(JavaTypes.STRING, "customer", order.customer());
-            container.put(JavaTypes.STRING, "orderTime", order.orderTime().toString());
+            container.put(LOCAL_DATE_TIME, "orderTime", order.orderTime());
             container.put(JavaTypes.STRING, "status", order.status().name());
             String cartJson = Cart.CODEC.encodeStart(JsonOps.INSTANCE, order.cart()).getOrThrow().toString();
             container.put(JavaTypes.STRING, "cart", cartJson);
@@ -163,7 +164,7 @@ public class KioskDBSerializer {
             DataContainer container = (DataContainer) dc;
             int orderId = container.get(JavaTypes.INT, "id").orElseThrow();
             String customer = container.get(JavaTypes.STRING, "customer").orElseThrow();
-            LocalDateTime orderTime = LocalDateTime.parse(container.get(JavaTypes.STRING, "orderTime").orElseThrow());
+            LocalDateTime orderTime = container.get(LOCAL_DATE_TIME, "orderTime").orElseThrow();
             OrderStatus status = OrderStatus.valueOf(container.get(JavaTypes.STRING, "status").orElseThrow());
             JsonElement cartElement = JsonParser.parseString(container.get(JavaTypes.STRING, "cart").orElseThrow());
             Cart cart = Cart.CODEC.decode(JsonOps.INSTANCE, cartElement).getOrThrow().getFirst();
