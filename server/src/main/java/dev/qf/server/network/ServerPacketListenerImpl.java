@@ -12,6 +12,7 @@ import common.registry.RegistryManager;
 import common.util.KioskLoggerFactory;
 import common.network.handler.SerializableHandler;
 import common.network.handler.listener.ServerPacketListener;
+import dev.qf.server.Main;
 import org.jetbrains.annotations.ApiStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,6 +106,7 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
                 (List<SynchronizeData<?>>) registry.getAll()
         ));
 
+        Main.getManager().saveSpecificRegistry(registry, packet.data());
     }
 
     @Override
@@ -122,6 +124,8 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
             } else {
                 logger.warn("Deletion not supported for registry: {}", registryId);
             }
+            Registry<?> registry = RegistryManager.getAsId(registryId);
+            Main.getManager().removeSpecificRegistry(registry, packet.dataId());
 
         } catch (Exception e) {
             logger.error("Failed to process deletion request", e);
