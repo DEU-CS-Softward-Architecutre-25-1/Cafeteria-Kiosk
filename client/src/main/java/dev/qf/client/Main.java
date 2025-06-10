@@ -1,10 +1,13 @@
 package dev.qf.client;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import common.OrderService;
 import common.event.ChannelEstablishedEvent;
 import common.network.packet.HandShakeC2SInfo;
 import common.registry.RegistryManager;
 import common.util.KioskLoggerFactory;
+import common.event.ChannelEstablishedEvent;
+import dev.qf.client.event.LoginEvent;
 import dev.qf.client.network.ClientPacketListenerFactory;
 import dev.qf.client.network.KioskNettyClient;
 import common.network.handler.factory.PacketListenerFactory;
@@ -82,36 +85,41 @@ public class Main {
         }
 
         SwingUtilities.invokeAndWait(() -> {
-            String[] options = {"메인 UI", "주문 관리", "메뉴 관리", "종료"};
-            int choice = JOptionPane.showOptionDialog(
-                    null,
-                    "어떤 관리 화면을 열까요?",
-                    "관리 시스템 선택",
-                    JOptionPane.DEFAULT_OPTION, // 옵션 개수 증가
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    options,
-                    options[0]
-            );
-
-            switch (choice) {
-                case 0: // 메인 UI
-                    new UserMainUI().setVisible(true);
-                    break;
-                case 1: // 주문 관리
-                    OwnerMainUI ownerMainUI = new OwnerMainUI();
-                    clientOrderService.setOwnerMainUI(ownerMainUI);
-                    ownerMainUI.setVisible(true);
-                    break;
-                case 2: // 메뉴 관리
-                    new MenuManagementUI().setVisible(true);
-                    break;
-                case 3: // 종료
-                default:
-                    System.exit(0);
-                    break;
-            }
+            LoginUI login = new LoginUI();
+            login.setVisible(true);
         });
+
+//        SwingUtilities.invokeAndWait(() -> {
+//            String[] options = {"메인 UI", "주문 관리", "메뉴 관리", "종료"};
+//            int choice = JOptionPane.showOptionDialog(
+//                    null,
+//                    "어떤 관리 화면을 열까요?",
+//                    "관리 시스템 선택",
+//                    JOptionPane.DEFAULT_OPTION, // 옵션 개수 증가
+//                    JOptionPane.QUESTION_MESSAGE,
+//                    null,
+//                    options,
+//                    options[0]
+//            );
+//
+//            switch (choice) {
+//                case 0: // 메인 UI
+//                    new UserMainUI().setVisible(true);
+//                    break;
+//                case 1: // 주문 관리
+//                    OwnerMainUI ownerMainUI = new OwnerMainUI();
+//                    clientOrderService.setOwnerMainUI(ownerMainUI);
+//                    ownerMainUI.setVisible(true);
+//                    break;
+//                case 2: // 메뉴 관리
+//                    new MenuManagementUI().setVisible(true);
+//                    break;
+//                case 3: // 종료
+//                default:
+//                    System.exit(0);
+//                    break;
+//            }
+//        });
     }
 
     public static ClientOrderService getClientOrderService() {
