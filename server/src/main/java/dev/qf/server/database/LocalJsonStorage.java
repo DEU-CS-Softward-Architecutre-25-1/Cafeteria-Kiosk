@@ -97,12 +97,38 @@ public class LocalJsonStorage implements ExternalDataManager {
         });
     }
 
+    @Override
+    public void removeSpecificRegistry(Registry<?> registry, String targetId) {
+        Path path = this.asPath(registry);
+        boolean hasPath = createDirectoryIfNotExist(path);
+        if (hasPath) {
+            return;
+        }
+        path.resolve(targetId + ".json").toFile().delete();
+    }
+
+    @Override
+    public void saveSpecificRegistry(Registry<?> registry, SynchronizeData<?> data) {
+        if (registry.getClazz() != data.getClass()) {
+            throw new IllegalArgumentException("Registry Target Class and data class type is not match");
+        }
+        Path path = this.asPath(registry);
+        createDirectoryIfNotExist(path);
+        try {
+            Files.writeString(path.resolve(data.getRegistryElementId() + ".json"), data.toJson().toString());
+        } catch (IOException e) {
+            logger.error("Failed to write data to file for registry {}", registry.getRegistryId());
+            logger.error("file data : {}", data);
+        }
+    }
+
     private Path asPath(Registry<?> registry) {
         return LOCAL_STORAGE_ROOT.resolve(registry.getRegistryId());
     }
 
     /**
      * create root directory if not exists
+     *
      * @param path registry path
      * @return true if created. else false.
      */

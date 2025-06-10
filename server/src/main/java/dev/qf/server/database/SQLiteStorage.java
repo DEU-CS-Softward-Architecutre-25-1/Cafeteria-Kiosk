@@ -6,6 +6,7 @@ import common.registry.Registry;
 import common.util.KioskLoggerFactory;
 import dev.qf.server.database.io.KioskDBSerializer;
 import me.mrnavastar.sqlib.SQLib;
+import me.mrnavastar.sqlib.api.DataContainer;
 import me.mrnavastar.sqlib.api.DataStore;
 import me.mrnavastar.sqlib.api.database.Database;
 import me.mrnavastar.sqlib.api.types.JavaTypes;
@@ -68,5 +69,20 @@ public class SQLiteStorage implements ExternalDataManager {
                 logger.error(e.getMessage());
             }
         });
+    }
+
+    @Override
+    public void removeSpecificRegistry(Registry<?> registry, String targetId) {
+        DataStore store = database.dataStore("kiosk", registry.getRegistryId());
+        store.getContainer("id", targetId).ifPresent(DataContainer::delete);
+    }
+
+    @Override
+    public void saveSpecificRegistry(Registry<?> registry, SynchronizeData<?> data) {
+        if (registry.getClazz() != data.getClass()) {
+            throw new IllegalArgumentException("Registry data class and data class type is not match");
+        }
+        DataStore store = database.dataStore("kiosk", registry.getRegistryId());
+        KioskDBSerializer.serialize(store.getOrCreateContainer("id", data.getRegistryElementId()), data);
     }
 }

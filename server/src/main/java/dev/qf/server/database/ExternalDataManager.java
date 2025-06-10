@@ -1,5 +1,6 @@
 package dev.qf.server.database;
 
+import common.network.SynchronizeData;
 import common.registry.Registry;
 import common.registry.RegistryManager;
 
@@ -18,4 +19,6 @@ public interface ExternalDataManager {
     void initialize();
     void loadSpecificRegistry(Registry<?> registry);
     void saveSpecificRegistry(Registry<?> registry);
+    void removeSpecificRegistry(Registry<?> registry, String targetId);
+    void saveSpecificRegistry(Registry<?> registry, SynchronizeData<?> data);
 }
