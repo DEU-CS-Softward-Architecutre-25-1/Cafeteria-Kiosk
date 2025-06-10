@@ -33,15 +33,15 @@ public class UserMainUI extends JFrame {
         // 누가 이거 하드코딩하래요?
 //        JButton coffeeBtn = new JButton("커피");
 //        JButton teaBtn = new JButton("티");
-//        JButton allBtn = new JButton("전체");
+        JButton allBtn = new JButton("전체");
 //
 //        coffeeBtn.addActionListener(e -> displayMenusByCategory("cate001"));
 //        teaBtn.addActionListener(e -> displayMenusByCategory("cate002"));
-//        allBtn.addActionListener(e -> displayMenusByCategory(null));
+        allBtn.addActionListener(e -> displayMenusByCategory(null));
 //
 //        categoryPanel.add(coffeeBtn);
 //        categoryPanel.add(teaBtn);
-//        categoryPanel.add(allBtn);
+        categoryPanel.add(allBtn);
 
         RegistryManager.CATEGORIES.getAll().forEach(category -> {
             JButton button = new JButton(category.cateName());
@@ -63,6 +63,7 @@ public class UserMainUI extends JFrame {
         cartScrollPane.setPreferredSize(new Dimension(400, 150));
         add(cartScrollPane, BorderLayout.SOUTH);
 
+        this.displayMenusByCategory(null);
         setVisible(true);
     }
 
