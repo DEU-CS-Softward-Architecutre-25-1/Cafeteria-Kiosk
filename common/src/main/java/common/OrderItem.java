@@ -16,7 +16,7 @@ public class OrderItem {
     private static final Logger LOGGER = KioskLoggerFactory.getLogger();
 
     public static final Codec<OrderItem> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                    Menu.CODEC.fieldOf("menuItem").forGetter(OrderItem::getMenuItem),
+                    Menu.SYNC_CODEC.fieldOf("menuItem").forGetter(OrderItem::getMenuItem),
                     Codec.unboundedMap(OptionGroup.CODEC, Option.CODEC).fieldOf("selectedItems").forGetter(OrderItem::getSelectedOptions),
                     Codec.INT.fieldOf("quantity").forGetter(OrderItem::getQuantity)
             ).apply(instance, (menuItem, selectedOptions, quantity) -> {
