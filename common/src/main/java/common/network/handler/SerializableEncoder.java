@@ -1,5 +1,6 @@
 package common.network.handler;
 
+import common.network.SerializableManager;
 import common.util.KioskLoggerFactory;
 import common.network.packet.Serializable;
 import common.network.encoding.StringEncodings;
@@ -22,6 +23,6 @@ public class SerializableEncoder extends MessageToByteEncoder<Serializable<?>> {
     protected void encode(ChannelHandlerContext ctx, Serializable<?> msg, ByteBuf out) {
             StringEncodings.encode(out, msg.toJson().toString(), 32767);
             int i = out.readableBytes();
-            LOGGER.info("OUT : [{}] -> {} bytes", msg.getPacketId(), i);
+            LOGGER.info(SerializableManager.SERIALIZABLE_SENT_MARKER, "OUT : [{}] -> {} bytes", msg.getPacketId(), i);
     }
 }
