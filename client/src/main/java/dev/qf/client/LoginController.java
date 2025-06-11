@@ -43,7 +43,7 @@ public class LoginController {
         }
 
         // 로그인 성공시 문자열 반환
-        dev.qf.client.event.LoginEvent.EVENT.invoker().onLogin(trimmedId, role != null, role);
+        LoginEvent.EVENT.invoker().onLogin(trimmedId, role != null, role);
 
         return role;
     }

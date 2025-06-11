@@ -54,7 +54,7 @@ public class PaymentUI extends JFrame {
 
         for (OrderItem item : cart.getItems()) {
             int qty = item.getQuantity();
-            int itemTotal = item.getTotalPrice() * qty;
+            int itemTotal = item.getTotalPrice();
 
             JPanel linePanel = new JPanel(new BorderLayout());
             linePanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));

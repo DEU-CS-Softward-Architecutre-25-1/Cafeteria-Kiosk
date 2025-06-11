@@ -472,7 +472,7 @@ public class MenuManagementUI extends JFrame {
     }
 
     private void handleCategoryManagement() {
-        dev.qf.client.CategoryManagementUI categoryUI = new dev.qf.client.CategoryManagementUI();
+        CategoryManagementUI categoryUI = new CategoryManagementUI();
         categoryUI.setVisible(true);
     }
 

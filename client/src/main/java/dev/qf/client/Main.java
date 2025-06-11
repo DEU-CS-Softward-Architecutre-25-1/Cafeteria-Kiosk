@@ -1,13 +1,10 @@
 package dev.qf.client;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import common.OrderService;
 import common.event.ChannelEstablishedEvent;
 import common.network.packet.HandShakeC2SInfo;
 import common.registry.RegistryManager;
 import common.util.KioskLoggerFactory;
-import common.event.ChannelEstablishedEvent;
-import dev.qf.client.event.LoginEvent;
 import dev.qf.client.network.ClientPacketListenerFactory;
 import dev.qf.client.network.KioskNettyClient;
 import common.network.handler.factory.PacketListenerFactory;
@@ -84,10 +81,24 @@ public class Main {
             LOGGER.info("데이터 로드 완료. 카테고리 수: {}", RegistryManager.CATEGORIES.size());
         }
 
+        // UI 초기화 및 로그인 화면 표시
         SwingUtilities.invokeAndWait(() -> {
-            LoginUI login = new LoginUI();
-            login.setVisible(true);
+            showLoginScreen();
         });
+    }
+
+    private static void showLoginScreen() {
+        try {
+            LoginUI loginUI = new LoginUI();
+            loginUI.setVisible(true);
+            LOGGER.info("로그인 화면이 표시되었습니다.");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null,
+                    "로그인 화면을 생성할 수 없습니다.",
+                    "오류",
+                    JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
     }
 
     public static ClientOrderService getClientOrderService() {

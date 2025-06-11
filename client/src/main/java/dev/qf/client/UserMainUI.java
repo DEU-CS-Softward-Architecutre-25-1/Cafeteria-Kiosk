@@ -4,45 +4,45 @@ import common.Cart;
 import common.Menu;
 import common.OrderItem;
 import common.registry.RegistryManager;
-import common.registry.RegistryManager;
 
 import javax.swing.*;
 import java.awt.*;
-import java.net.MalformedURLException;
-import java.nio.file.Paths;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
-import java.util.Objects;
 
 public class UserMainUI extends JFrame {
     private final Cart cart = new Cart();
     private final CartController cartController = new CartController(cart);
     private final OptionSelectionController optionController = new OptionSelectionController();
     private final JPanel cartPanel = new JPanel();
-    private final JPanel menuPanel = new JPanel(new GridLayout(0, 3, 10, 10));    private final List<common.Menu> allMenus;
+    private final JPanel menuPanel = new JPanel(new GridLayout(0, 3, 10, 10));
+    private final List<Menu> allMenus;
 
     public UserMainUI() {
         allMenus = RegistryManager.MENUS.getAll();
 
         setTitle("카페 키오스크");
-        setSize(400, 600);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setSize(800, 700);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout());
+        setLocationRelativeTo(null);
 
+        initComponents();
+        displayMenusByCategory(null); // 초기에 전체 메뉴 표시
+        refreshCart();
+    }
+
+    private void initComponents() {
         // === [상단] 카테고리 패널 ===
         JPanel categoryPanel = new JPanel(new FlowLayout());
-        // 누가 이거 하드코딩하래요?
-//        JButton coffeeBtn = new JButton("커피");
-//        JButton teaBtn = new JButton("티");
+
+        // 전체 버튼
         JButton allBtn = new JButton("전체");
-//
-//        coffeeBtn.addActionListener(e -> displayMenusByCategory("cate001"));
-//        teaBtn.addActionListener(e -> displayMenusByCategory("cate002"));
         allBtn.addActionListener(e -> displayMenusByCategory(null));
-//
-//        categoryPanel.add(coffeeBtn);
-//        categoryPanel.add(teaBtn);
         categoryPanel.add(allBtn);
 
+        // 카테고리별 버튼
         RegistryManager.CATEGORIES.getAll().forEach(category -> {
             JButton button = new JButton(category.cateName());
             button.addActionListener(e -> displayMenusByCategory(category.cateId()));
@@ -53,63 +53,116 @@ public class UserMainUI extends JFrame {
 
         // === [중단] 메뉴 패널 ===
         JScrollPane menuScrollPane = new JScrollPane(menuPanel);
-        menuScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        menuScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         menuScrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         add(menuScrollPane, BorderLayout.CENTER);
 
         // === [하단] 장바구니 패널 ===
         cartPanel.setLayout(new BoxLayout(cartPanel, BoxLayout.Y_AXIS));
         JScrollPane cartScrollPane = new JScrollPane(cartPanel);
-        cartScrollPane.setPreferredSize(new Dimension(400, 150));
+        cartScrollPane.setPreferredSize(new Dimension(800, 180));
         add(cartScrollPane, BorderLayout.SOUTH);
-
-        this.displayMenusByCategory(null);
-        setVisible(true);
     }
 
     private void displayMenusByCategory(String cateId) {
         menuPanel.removeAll();
+
         List<Menu> filtered = (cateId == null)
                 ? allMenus
                 : RegistryManager.CATEGORIES.getById(cateId).orElseThrow().menus();
 
         for (Menu menu : filtered) {
-            JPanel menuItemPanel = new JPanel();
-            menuItemPanel.setLayout(new BoxLayout(menuItemPanel, BoxLayout.Y_AXIS));
-            menuItemPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-            JLabel imgLabel = new JLabel();
-            // 이미지 로딩 및 크기 조절
-            try {
-                ImageIcon icon = new ImageIcon(menu.imagePath().toUri().toURL());
-                Image image = icon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
-                imgLabel = new JLabel(new ImageIcon(image));
-                imgLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                imgLabel.addMouseListener(new java.awt.event.MouseAdapter() {
-                    public void mouseClicked(java.awt.event.MouseEvent evt) {
-                        new OptionSelectUI(menu, cartController, optionController, UserMainUI.this);
-                    }
-                });
-            } catch (MalformedURLException e) {
-                e.printStackTrace();  // 또는 사용자에게 기본 이미지로 대체하거나 에러 표시
-            }
-
-            // 메뉴명과 가격
-            JLabel nameLabel = new JLabel(menu.name(), SwingConstants.CENTER);
-            nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            JLabel priceLabel = new JLabel("₩" + menu.price(), SwingConstants.CENTER);
-            priceLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-            menuItemPanel.add(imgLabel);
-            menuItemPanel.add(Box.createVerticalStrut(5));
-            menuItemPanel.add(nameLabel);
-            menuItemPanel.add(priceLabel);
-
+            JPanel menuItemPanel = createMenuItemPanel(menu);
             menuPanel.add(menuItemPanel);
         }
 
         menuPanel.revalidate();
         menuPanel.repaint();
+    }
+
+    private JPanel createMenuItemPanel(Menu menu) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+        panel.setPreferredSize(new Dimension(200, 250));
+        panel.setBackground(Color.WHITE);
+        panel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // 클릭 이벤트
+        panel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                handleMenuClick(menu);
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                panel.setBackground(new Color(240, 240, 240));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                panel.setBackground(Color.WHITE);
+            }
+        });
+
+        // 이미지
+        JLabel imgLabel = createImageLabel(menu);
+        imgLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(imgLabel);
+
+        panel.add(Box.createVerticalStrut(5));
+
+        // 메뉴명
+        JLabel nameLabel = new JLabel(menu.name(), SwingConstants.CENTER);
+        nameLabel.setFont(new Font("맑은 고딕", Font.BOLD, 14));
+        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(nameLabel);
+
+        // 가격
+        JLabel priceLabel = new JLabel("₩" + String.format("%,d", menu.price()), SwingConstants.CENTER);
+        priceLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(priceLabel);
+
+        return panel;
+    }
+
+    private JLabel createImageLabel(Menu menu) {
+        JLabel imgLabel = new JLabel();
+        imgLabel.setPreferredSize(new Dimension(150, 120));
+        imgLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        try {
+            if (menu.imagePath() != null) {
+                ImageIcon icon = new ImageIcon(menu.imagePath().toString());
+                Image image = icon.getImage().getScaledInstance(150, 120, Image.SCALE_SMOOTH);
+                imgLabel.setIcon(new ImageIcon(image));
+            } else {
+                imgLabel.setText("이미지 없음");
+                imgLabel.setBackground(new Color(245, 245, 245));
+                imgLabel.setOpaque(true);
+            }
+        } catch (Exception e) {
+            imgLabel.setText("🍽️");
+            imgLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 30));
+            imgLabel.setBackground(new Color(245, 245, 245));
+            imgLabel.setOpaque(true);
+        }
+
+        return imgLabel;
+    }
+
+    private void handleMenuClick(Menu menu) {
+        // 옵션이 있는 메뉴
+        if (menu.optionGroup() != null && !menu.optionGroup().isEmpty()) {
+            new OptionSelectUI(menu, cartController, optionController, this);
+        } else {
+            // 옵션이 없는 메뉴는 바로 추가
+            OrderItem item = new OrderItem(menu, java.util.Map.of(), 1);
+            cartController.addItemToCart(item);
+            refreshCart();
+            JOptionPane.showMessageDialog(this, menu.name() + " 추가 완료!", "알림", JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 
     public void refreshCart() {
@@ -118,11 +171,10 @@ public class UserMainUI extends JFrame {
         JPanel itemPanel = new JPanel();
         itemPanel.setLayout(new BoxLayout(itemPanel, BoxLayout.Y_AXIS));
 
-        for (var entry : cart.getItems()) {
-            OrderItem item = entry;
-            int quantity = entry.getQuantity();
-
-            JLabel label = new JLabel(item.getOrderDescription() + " x" + quantity + " = ₩" + (item.getTotalPrice() * quantity));
+        // 장바구니 항목들
+        for (OrderItem item : cart.getItems()) {
+            int quantity = item.getQuantity();
+            JLabel label = new JLabel(item.getOrderDescription() + " x" + quantity + " = ₩" + String.format("%,d", item.getTotalPrice()));
 
             JPanel linePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
             linePanel.add(label);
@@ -131,21 +183,30 @@ public class UserMainUI extends JFrame {
 
             itemPanel.add(linePanel);
         }
-        // 총합 패널 (아랫쪽, 오른쪽 정렬)
-        JLabel totalLabel = new JLabel("총 합계: ₩" + cartController.getCartTotal());
-        totalLabel.setFont(new Font("Dialog", Font.BOLD, 14));
+
+        // 총합 패널
+        JLabel totalLabel = new JLabel("총 합계: ₩" + String.format("%,d", cartController.getCartTotal()));
+        totalLabel.setFont(new Font("맑은 고딕", Font.BOLD, 16));
 
         JButton payButton = new JButton("결제");
-        payButton.setFont(new Font("Dialog", Font.BOLD, 14));
-        payButton.addActionListener(e -> new PaymentUI(cartController.getCartTotal(), cart, this));
+        payButton.setFont(new Font("맑은 고딕", Font.BOLD, 14));
+        payButton.setBackground(new Color(70, 130, 180));
+        payButton.setForeground(Color.WHITE);
+        payButton.addActionListener(e -> {
+            if (cart.getItems().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "장바구니가 비어있습니다.", "알림", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            PaymentUI paymentUI = new PaymentUI(cartController.getCartTotal(), cart, this);
+            paymentUI.setVisible(true);
+        });
 
-        JPanel summaryPanel = new JPanel();
-        summaryPanel.setLayout(new BorderLayout());
+        JPanel summaryPanel = new JPanel(new BorderLayout());
         summaryPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         summaryPanel.add(totalLabel, BorderLayout.WEST);
         summaryPanel.add(payButton, BorderLayout.EAST);
 
-        // cartPanel을 상하로 분할
+        // cartPanel 구성
         cartPanel.setLayout(new BorderLayout());
         cartPanel.add(itemPanel, BorderLayout.CENTER);
         cartPanel.add(summaryPanel, BorderLayout.SOUTH);
