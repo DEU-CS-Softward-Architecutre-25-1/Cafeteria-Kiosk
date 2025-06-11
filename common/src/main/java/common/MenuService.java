@@ -10,6 +10,7 @@ import common.util.KioskLoggerFactory;
 import org.slf4j.Logger;
 
 import java.nio.file.Path;
+import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -47,16 +48,15 @@ public class MenuService {
 
             Menu newMenu = new Menu(menuId, name, price, imagePathObj, description, List.of(), soldOut);
 
-            RegistryManager.MENUS.add(menuId, newMenu);
 
             Optional<Category> categoryOpt = RegistryManager.CATEGORIES.getById(categoryId);
+            Category updatedCategory = null;
             if (categoryOpt.isPresent()) {
                 Category oldCategory = categoryOpt.get();
                 List<Menu> updatedMenuList = new ArrayList<>(oldCategory.menus());
                 updatedMenuList.add(newMenu);
 
-                Category updatedCategory = new Category(oldCategory.cateId(), oldCategory.cateName(), updatedMenuList);
-                RegistryManager.CATEGORIES.add(categoryId, updatedCategory);
+                updatedCategory = new Category(oldCategory.cateId(), oldCategory.cateName(), updatedMenuList);
             }
 
 
@@ -69,9 +69,7 @@ public class MenuService {
                     LOGGER.info("Menu registration requested: {} for category: {}", name, categoryId);
 
                     // 업데이트된 카테고리 전송
-                    Optional<Category> updatedCategoryOpt = RegistryManager.CATEGORIES.getById(categoryId);
-                    if (updatedCategoryOpt.isPresent()) {
-                        Category updatedCategory = updatedCategoryOpt.get();
+                    if (updatedCategory != null) {
                         connection.sendSerializable("server",
                                 new DataAddedC2SPacket(RegistryManager.CATEGORIES.getRegistryId(), updatedCategory));
                         LOGGER.info("Updated category sent to server: {} with {} menus",
@@ -215,7 +213,7 @@ public class MenuService {
                         category.cateName(),
                         menuList
                 );
-                RegistryManager.CATEGORIES.add(category.cateId(), updatedCategory);
+
                 updatedCategories.add(updatedCategory);
                 LOGGER.debug("Category {} updated with new menu data", category.cateName());
             }
