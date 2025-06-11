@@ -4,21 +4,21 @@ import common.Cart;
 import common.Menu;
 import common.OrderItem;
 import common.registry.RegistryManager;
-import common.registry.RegistryManager;
 
 import javax.swing.*;
 import java.awt.*;
 import java.net.MalformedURLException;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Objects;
 
 public class UserMainUI extends JFrame {
     private final Cart cart = new Cart();
     private final CartController cartController = new CartController(cart);
     private final OptionSelectionController optionController = new OptionSelectionController();
     private final JPanel cartPanel = new JPanel();
-    private final JPanel menuPanel = new JPanel(new GridLayout(0, 3, 10, 10));    private final List<common.Menu> allMenus;
+    private final JPanel menuPanel = new JPanel(new GridLayout(0, 2, 10, 10));    private final List<common.Menu> allMenus;
+    private final JPanel categoryButtonPanel;
+    private final JScrollPane categoryScrollPane;
 
     public UserMainUI() {
         allMenus = RegistryManager.MENUS.getAll();
@@ -29,27 +29,25 @@ public class UserMainUI extends JFrame {
         setLayout(new BorderLayout());
 
         // === [상단] 카테고리 패널 ===
-        JPanel categoryPanel = new JPanel(new FlowLayout());
-        // 누가 이거 하드코딩하래요?
-//        JButton coffeeBtn = new JButton("커피");
-//        JButton teaBtn = new JButton("티");
-//        JButton allBtn = new JButton("전체");
-//
-//        coffeeBtn.addActionListener(e -> displayMenusByCategory("cate001"));
-//        teaBtn.addActionListener(e -> displayMenusByCategory("cate002"));
-//        allBtn.addActionListener(e -> displayMenusByCategory(null));
-//
-//        categoryPanel.add(coffeeBtn);
-//        categoryPanel.add(teaBtn);
-//        categoryPanel.add(allBtn);
+        categoryButtonPanel = new JPanel(new GridLayout(0, 4, 5, 5));
 
-        RegistryManager.CATEGORIES.getAll().forEach(category -> {
-            JButton button = new JButton(category.cateName());
-            button.addActionListener(e -> displayMenusByCategory(category.cateId()));
-            categoryPanel.add(button);
+        // 프레임의 크기 변경 리스너를 추가하여 카테고리 버튼 크기를 동적으로 조절
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                // 프레임 너비에 따라 카테고리 버튼 패널 내의 각 버튼 크기를 조절
+                updateCategoryButtonSizes(categoryButtonPanel);
+            }
         });
 
-        add(categoryPanel, BorderLayout.NORTH);
+        categoryScrollPane = new JScrollPane(categoryButtonPanel);
+        categoryScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER); // 가로 스크롤바 없음
+        categoryScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED); // 세로 스크롤바 필요시 표시
+        categoryScrollPane.setPreferredSize(new Dimension(0, 80)); // 높이 80px (버튼 2줄 높이)
+        categoryScrollPane.setBorder(BorderFactory.createEmptyBorder()); // 테두리 제거
+
+
+        add(categoryScrollPane, BorderLayout.NORTH); // 카테고리 스크롤 패널을 NORTH 영역에 추가
 
         // === [중단] 메뉴 패널 ===
         JScrollPane menuScrollPane = new JScrollPane(menuPanel);
@@ -63,7 +61,41 @@ public class UserMainUI extends JFrame {
         cartScrollPane.setPreferredSize(new Dimension(400, 150));
         add(cartScrollPane, BorderLayout.SOUTH);
 
+        displayCategories();
+        displayMenusByCategory(null);
+
         setVisible(true);
+    }
+
+    private void updateCategoryButtonSizes(JPanel panel) {
+        int panelWidth = getWidth(); // 프레임의 현재 너비를 가져옴
+        int buttonWidth = (panelWidth - 15 - 20) / 4; // 대략적인 계산
+        int buttonHeight = 30; // 버튼 높이는 고정
+
+        for (Component comp : panel.getComponents()) {
+            if (comp instanceof JButton) {
+                JButton button = (JButton) comp;
+                button.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
+                button.setMinimumSize(new Dimension(buttonWidth, buttonHeight));
+                button.setMaximumSize(new Dimension(buttonWidth, buttonHeight));
+            }
+        }
+        panel.revalidate(); // 패널 레이아웃 다시 계산
+        panel.repaint(); // 패널 다시 그리기
+    }
+
+    public void displayCategories() { // 변경: 새로운 메서드 추가
+        categoryButtonPanel.removeAll(); // 기존 버튼 모두 제거
+        RegistryManager.CATEGORIES.getAll().forEach(category -> {
+            JButton button = new JButton(category.cateName());
+            // 버튼의 선호 크기 설정 (updateCategoryButtonSizes에서 다시 조절되므로 초기값)
+            button.setPreferredSize(new Dimension(85, 30));
+            button.addActionListener(e -> displayMenusByCategory(category.cateId()));
+            categoryButtonPanel.add(button);
+        });
+        categoryButtonPanel.revalidate(); // 레이아웃 다시 계산
+        categoryButtonPanel.repaint();    // 다시 그리기
+        updateCategoryButtonSizes(categoryButtonPanel); // 버튼 추가 후 크기 재조절
     }
 
     private void displayMenusByCategory(String cateId) {

@@ -19,6 +19,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
+    private static int nextLocalOrderId = 1; // 순차적 ID 관리 변수
     public static final KioskNettyClient INSTANCE = new KioskNettyClient();
     private static final Logger LOGGER = KioskLoggerFactory.getLogger();
     private static ClientOrderService clientOrderService;
@@ -113,6 +114,10 @@ public class Main {
 
     public static ClientOrderService getClientOrderService() {
         return clientOrderService;
+    }
+
+    public static int getNextLocalOrderIdAndIncrement() {
+        return nextLocalOrderId++; // 현재 값 반환 후 1 증가
     }
 
     static {

@@ -27,6 +27,7 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
     private final SerializableHandler handler;
     private final Logger logger = KioskLoggerFactory.getLogger();
     private final byte[] nonce;
+    private static int nextOrderId = 1; // 서버 시작 시 1로 초기화
 
     //백업 저장소
     private final Map<String, List<Menu>> categoryMenuBackup = new HashMap<>();
@@ -124,6 +125,48 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
         } catch (Exception e) {
             logger.error("Failed to process deletion request", e);
         }
+    }
+
+    @Override
+    public void onOrderStatusChanged(OrderStatusChangedC2SPacket packet) { // 이 메서드를 남깁니다.
+        if (!this.handler.isEncrypted()) {
+            throw new IllegalStateException("Client is not encrypted");
+        }
+        Order receivedOrder = packet.order();
+
+        // 새 주문 ID를 nextOrderId를 이용해 부여합니다.
+        int newOrderId = nextOrderId++; // nextOrderId++; 이 코드가 있는 버전을 남겨야 합니다.
+
+        // 새로운 ID를 포함하는 Order 객체를 새로 생성합니다.
+        common.Order finalOrder = new common.Order(
+                newOrderId,
+                receivedOrder.customer(),
+                receivedOrder.orderTime(),
+                common.OrderStatus.ACCEPTED, // 서버에서 상태를 PENDING->ACCEPTED로 변경할 수 있습니다.
+                receivedOrder.cart()
+        );
+
+        System.out.println("--- 서버에서 수신 및 ID 부여 완료된 주문 정보 ---");
+        // ... (finalOrder의 상세 정보 로그 출력) ...
+        System.out.println("부여된 새 주문 ID: " + finalOrder.orderId());
+        System.out.println("------------------------------------");
+
+        try {
+            RegistryManager.ORDERS.unfreeze();
+            // 서버에서 새로 생성한 finalOrder 객체를 Registry에 추가합니다.
+            // RegistryManager.ORDERS.addOrder(finalOrder); // OrderRegistry가 있다면 사용
+            // RegistryManager.ORDERS.add(String.valueOf(finalOrder.orderId()), finalOrder); // 일반 Registry의 add 사용
+            ((common.registry.OrderRegistry)RegistryManager.ORDERS).addOrder(finalOrder); // OrderRegistry로 캐스팅하여 addOrder 호출
+
+        } finally {
+            RegistryManager.ORDERS.freeze();
+        }
+
+        logger.info("서버: 주문 정보 수신 및 저장됨 - 주문 ID: {}", finalOrder.orderId());
+
+        // 클라이언트에 새로운 주문 ID와 함께 업데이트된 Order 객체를 전송 (선택 사항)
+        // KioskNettyServer server = (KioskNettyServer) handler.connection;
+        // server.broadCast(new common.network.packet.OrderUpdatedS2CPacket(finalOrder));
     }
 
     // 백업 관련
@@ -450,22 +493,6 @@ public class ServerPacketListenerImpl implements ServerPacketListener {
             throw new IllegalStateException("Client is not encrypted");
         }
         // TODO IMPLEMENT PACKET HANDLING
-    }
-
-    @Override
-    public void onOrderStatusChanged(OrderStatusChangedC2SPacket packet) {
-        if (!this.handler.isEncrypted()) {
-            throw new IllegalStateException("Client is not encrypted");
-        }
-        Order order = packet.order();
-        try {
-            RegistryManager.ORDERS.unfreeze();
-            RegistryManager.ORDERS.addOrder(order);
-        } finally {
-            RegistryManager.ORDERS.freeze();
-        }
-        KioskNettyServer server = (KioskNettyServer) handler.connection;
-        server.broadCast(new OrderUpdatedS2CPacket(order));
     }
 
     @Override

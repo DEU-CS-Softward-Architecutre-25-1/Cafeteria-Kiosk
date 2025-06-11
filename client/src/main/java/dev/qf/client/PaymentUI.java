@@ -47,17 +47,16 @@ public class PaymentUI extends JFrame {
         payButton.addActionListener(e -> {
             JOptionPane.showMessageDialog(this, "결제가 완료되었습니다.");
 
-            // 임시 주문 정보 생성
-            Random random = new Random();
-            int orderId = random.nextInt(1000000); // 임시 주문 ID 생성
-            String customerName = "익명"; // 임시 고객명 설정
+            int orderId = dev.qf.client.Main.getNextLocalOrderIdAndIncrement(); // Main 클래스에 메서드 추가 필요
+
+            String customerName = "익명";
 
             Order newOrder = new Order(
                     orderId,
                     customerName,
-                    LocalDateTime.now(), // 현재 시간
-                    common.OrderStatus.PENDING, // 초기 주문 상태
-                    cart // 현재 장바구니 객체
+                    LocalDateTime.now(),
+                    common.OrderStatus.PENDING,
+                    cart
             );
 
             // 생성된 Order 객체를 서버로 전송 시작
