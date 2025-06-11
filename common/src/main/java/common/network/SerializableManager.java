@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SerializableManager {
     public static final Marker NETWORK_MARKER = MarkerFactory.getMarker("NETWORK");
     public static final Marker SERIALIZABLE_RECEIVED_MARKER = CommonUtils.makeWithInitialization(MarkerFactory.getMarker("SERIALIZABLE_RECEIVED"), marker -> marker.add(NETWORK_MARKER));
-    public static final Marker SERIALIZABLE_SENT_MARKER = CommonUtils.makeWithInitialization(MarkerFactory.getMarker("SERIALIZABLE_SENT"), marker -> marker.add(SERIALIZABLE_RECEIVED_MARKER));
+    public static final Marker SERIALIZABLE_SENT_MARKER = CommonUtils.makeWithInitialization(MarkerFactory.getMarker("SERIALIZABLE_SENT"), marker -> marker.add(NETWORK_MARKER));
 
     public static final Map<String, Codec<? extends SidedPacket>> SERIALIZABLE_MAP = new ConcurrentHashMap<>();
 
