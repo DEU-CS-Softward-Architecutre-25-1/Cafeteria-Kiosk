@@ -88,19 +88,28 @@ public class LoginUI extends JFrame {
             // 이 콜백은 로그인 시도가 끝날 때마다 호출됨
             SwingUtilities.invokeLater(() -> {
                 if (success) {
-                    if ("OWNER".equals(role)) {
-                        new OwnerMainUI().setVisible(true);
-                    } else {
-                        new UserMainUI().setVisible(true);
-                    }
+                    OwnerMainUI dashboard = new OwnerMainUI(id, role);
+
+                    dashboard.setVisible(true);
                     dispose(); // 로그인 창 닫기
+
+                    // 성공 메시지 표시
+                    String roleText = "OWNER".equals(role) ? "관리자" : "사용자";
+                    JOptionPane.showMessageDialog(
+                            dashboard,
+                            String.format("환영합니다, %s님! (%s)", id, roleText),
+                            "로그인 성공",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
                 }
                 // 입력값이 잘못 되었을 경우 else
                 else {
                     JOptionPane.showMessageDialog(this,
-                            "Id와 Pw를 다시 확인해주세요.",
+                            "ID와 PW를 다시 확인해주세요.",
                             "로그인 오류",
                             JOptionPane.ERROR_MESSAGE);
+                    pwText.setText("");
+                    idText.requestFocus();
                 }
             });
         });

@@ -11,7 +11,7 @@ import java.util.*;
 import java.util.List;
 
 public class OptionSelectUI extends JFrame {
-    private final common.Menu selectedMenu;
+    private final Menu selectedMenu;
     private final CartController cartController;
     private final OptionSelectionController optionController;
     private final UserMainUI parentUI;
