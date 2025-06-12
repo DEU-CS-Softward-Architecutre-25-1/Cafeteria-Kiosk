@@ -6,7 +6,7 @@ import common.network.handler.factory.PacketListenerFactory;
 import common.util.Container;
 import dev.qf.server.database.ExternalDataManager;
 import dev.qf.server.database.LocalJsonStorage;
-import dev.qf.server.database.SQLiteStorage;
+import dev.qf.server.database.CommonDBManager;
 import dev.qf.server.network.KioskNettyServer;
 import dev.qf.server.network.ServerPacketListenerFactory;
 import joptsimple.OptionParser;
@@ -39,19 +39,19 @@ public class Main {
             LOGGER.info("Debugging items enabled");
             DebugData data = new DebugData();
             data.generateDebugData();
-            manager = new SQLiteStorage();
+            manager = new CommonDBManager();
         } else {
             // 데이터베이스에 대한 부분을 분리해둔 이유는 testItem argument 가 존재하는데도 불구하고 데이터베이스를 연결하는 상황을 방지하기 위해서이다.
             if (optionSet.has(storageType)) {
                 String value = storageType.value(optionSet);
                  manager = switch (value.toLowerCase()) {
                     case "json" -> new LocalJsonStorage();
-                    case "sqlite" -> new SQLiteStorage();
+                    case "sqlite" -> new CommonDBManager();
                     default -> throw new IllegalArgumentException("Invalid storage type, only accepts json or sqlite");
                 };
             } else {
                 LOGGER.warn("No storage type specified. Using default storage type");
-                manager = new SQLiteStorage();
+                manager = new CommonDBManager();
             }
         }
         manager.initialize();

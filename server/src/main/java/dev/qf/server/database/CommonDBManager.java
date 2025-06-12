@@ -1,7 +1,6 @@
 package dev.qf.server.database;
 
 import common.network.SynchronizeData;
-import common.network.packet.Serializable;
 import common.registry.Registry;
 import common.util.KioskLoggerFactory;
 import dev.qf.server.database.io.KioskDBSerializer;
@@ -16,7 +15,7 @@ import org.slf4j.Logger;
 
 import java.nio.file.Path;
 
-public class SQLiteStorage implements ExternalDataManager {
+public class CommonDBManager implements ExternalDataManager {
     private final Logger logger = KioskLoggerFactory.getLogger();
     private Database database;
 
@@ -27,7 +26,7 @@ public class SQLiteStorage implements ExternalDataManager {
 
     @Override
     public void initialize() {
-        NonMinecraft.init(Path.of("sqlite"), Path.of("sqlite", "config"));
+        NonMinecraft.init(Path.of("database"), Path.of("database", "config"));
         database = SQLib.getDatabase();
     }
 

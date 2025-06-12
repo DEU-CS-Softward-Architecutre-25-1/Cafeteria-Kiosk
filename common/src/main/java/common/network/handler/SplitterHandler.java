@@ -19,7 +19,7 @@ public class SplitterHandler extends ByteToMessageDecoder {
     }
 
     private static boolean shouldSplit(ByteBuf source, ByteBuf sizeBuf) {
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < LENGTH_BYTES; i++) {
             if (!source.isReadable()) {
                 return false;
             }

@@ -17,7 +17,7 @@ public class SizePrepender extends MessageToByteEncoder<ByteBuf> {
     protected void encode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, ByteBuf byteBuf2) {
         int i = byteBuf.readableBytes();
         int j = VariableInts.getSizeInBytes(i);
-        if (j > 3) {
+        if (j > MAX_PREPEND_LENGTH) {
             throw new EncoderException("Packet too large: size " + i + " is over 8");
         } else {
             byteBuf2.ensureWritable(j + i);

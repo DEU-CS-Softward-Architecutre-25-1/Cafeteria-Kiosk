@@ -120,4 +120,4 @@ runs/
 /logs/
 /client/logs/
 /server/logs/
-/sqlite/
+/database/
