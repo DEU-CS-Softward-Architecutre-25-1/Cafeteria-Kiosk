@@ -23,8 +23,6 @@ public class OrderDetailView extends JDialog {
 
         setTitle("주문번호 " + orderId);
         setModal(true);
-        setSize(400, 520);
-        setLocationRelativeTo(null);
         setResizable(false);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
@@ -66,11 +64,12 @@ public class OrderDetailView extends JDialog {
                     contentPanel.add(menuLabel);
 
                     String optionText = formatOptions(orderItem.getSelectedOptions());
-                    JLabel optionLabel = new JLabel(optionText);
-                    optionLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 18));
-                    optionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                    contentPanel.add(optionLabel);
 
+                    JLabel optionLabel = new JLabel("<html>" + optionText + "</html>");
+                    optionLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 16));
+                    optionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    optionLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                    contentPanel.add(optionLabel);
                     contentPanel.add(Box.createVerticalStrut(8));
                 }
             }
@@ -79,7 +78,6 @@ public class OrderDetailView extends JDialog {
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
         infoPanel.setOpaque(false);
         infoPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
 
         JLabel packLabel = new JLabel("포장 :");
         packLabel.setFont(new Font("맑은 고딕", Font.BOLD, 20));
@@ -93,10 +91,7 @@ public class OrderDetailView extends JDialog {
         contentPanel.add(Box.createVerticalStrut(12));
         contentPanel.add(infoPanel);
 
-        JScrollPane scrollPane = new JScrollPane(contentPanel);
-        scrollPane.setBorder(null);
-        scrollPane.setBackground(Color.WHITE);
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        mainPanel.add(contentPanel, BorderLayout.CENTER);
 
         JPanel buttonPanel = new JPanel();
         buttonPanel.setOpaque(false);
@@ -112,6 +107,11 @@ public class OrderDetailView extends JDialog {
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         setContentPane(mainPanel);
+
+        pack();
+        setSize(400, getHeight());
+
+        setLocationRelativeTo(null);
     }
 
     private JButton createButton(String text, Color bgColor) {
@@ -138,7 +138,7 @@ public class OrderDetailView extends JDialog {
         }
         return selectedOptions.entrySet().stream()
                 .map(e -> e.getKey().name() + ": " + e.getValue().name())
-                .collect(Collectors.joining(", ", "(", ")"));
+                .collect(Collectors.joining("<br>"));
     }
 
     private Order getOrderDetail(int orderId) {
