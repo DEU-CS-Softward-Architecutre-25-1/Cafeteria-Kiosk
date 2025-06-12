@@ -11,6 +11,7 @@ import common.network.handler.listener.PacketListener;
 import common.network.packet.SidedPacket;
 import common.util.Container;
 import io.netty.channel.*;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -63,8 +64,8 @@ public class SerializableHandler extends SimpleChannelInboundHandler<SidedPacket
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        super.channelActive(ctx);
         this.channel = ctx.channel();
+        super.channelActive(ctx);
         this.packetListener = Container.get(PacketListenerFactory.class).getPacketListener(this);
         this.connection.onEstablishedChannel(ctx, this);
         ChannelEstablishedEvent.EVENT.invoker().onChannelEstablished(this);
@@ -87,12 +88,12 @@ public class SerializableHandler extends SimpleChannelInboundHandler<SidedPacket
      * @param packet
      * @return
      */
-    @Nullable
+    @NotNull
     public ChannelFuture send(Serializable<?> packet) {
         if (this.channel != null && this.channel.isOpen()) {
             return this.channel.writeAndFlush(packet);
         }
-        return null;
+        throw new IllegalStateException("channel is not opened");
     }
 
     public void setId(String id) {

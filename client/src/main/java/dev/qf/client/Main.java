@@ -5,6 +5,7 @@ import common.event.ChannelEstablishedEvent;
 import common.network.packet.HandShakeC2SInfo;
 import common.registry.RegistryManager;
 import common.util.KioskLoggerFactory;
+import dev.qf.client.config.Config;
 import dev.qf.client.network.ClientPacketListenerFactory;
 import dev.qf.client.network.KioskNettyClient;
 import common.network.handler.factory.PacketListenerFactory;
@@ -16,6 +17,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Main {
     public static final KioskNettyClient INSTANCE = new KioskNettyClient();
@@ -33,9 +35,13 @@ public class Main {
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
         mainThread = Thread.currentThread();
         ChannelEstablishedEvent.EVENT.register((handler -> mainThread.interrupt()));
-
-        INSTANCE.run();
-
+        Config.load();
+        try {
+            INSTANCE.run();
+        } catch (Exception e) {
+            LOGGER.error("Can not Connect to Server.", e);
+            System.exit(1);
+        }
         synchronized (mainThread) {
             try {
                 mainThread.wait();
@@ -53,7 +59,7 @@ public class Main {
         }
 
         LOGGER.info("서버에 연결됨. HandShake 전송...");
-        INSTANCE.sendSerializable(new HandShakeC2SInfo("test"));
+        INSTANCE.sendSerializable(new HandShakeC2SInfo(Config.getInstance().getKioskId()));
 
         clientOrderService = new ClientOrderService();
 

@@ -121,3 +121,4 @@ runs/
 /client/logs/
 /server/logs/
 /database/
+/config.json

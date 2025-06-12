@@ -2,7 +2,7 @@
 <Configuration status="WARN">
     <Appenders>
         <Console name="SysOut" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{HH:mm:ss}] [%c{2}/%level] (%marker) : %msg{nolookups}%n" />
+            <PatternLayout pattern="[%d{HH:mm:ss}] [%c{2}/%level] : %msg{nolookups}%n" />
             <MarkerFilter marker = "NETWORK" onMatch="DENY" onMismatch="ACCEPT"/>
         </Console>
         <RollingRandomAccessFile name="File" fileName="logs/latest.log" filePattern="logs/%d{yyyy-MM-dd}-%i.log.gz">
